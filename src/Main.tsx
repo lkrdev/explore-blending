@@ -16,11 +16,12 @@ import { ComponentsProvider } from "@looker/components";
 import { ExtensionContext } from "@looker/extension-sdk-react";
 import React, { useContext, useEffect, useState } from "react";
 import { Route, Switch } from "react-router-dom";
-
+import Blend from "./Blend";
 /**
+
  * A simple component that uses the Looker SDK through the extension sdk to display a customized hello message.
  */
-export const HelloWorld: React.FC<{
+const Main: React.FC<{
   route: string;
   routeState: any;
 }> = ({ route, routeState }) => {
@@ -43,14 +44,21 @@ export const HelloWorld: React.FC<{
 
   return (
     <ComponentsProvider>
+      {/* @ts-ignore */}
       <Switch>
-        <Route path="/">
-          <div>Hello Wor3</div>
-        </Route>
+        {/* @ts-ignore */}
+        <Route exact path="/"></Route>
+        {/* @ts-ignore */}
         <Route path="/blend">
-          <div>Blend</div>
+          <Blend />
         </Route>
       </Switch>
     </ComponentsProvider>
   );
 };
+
+export const useExtensionContext = () => {
+  return useContext(ExtensionContext);
+};
+
+export default Main;

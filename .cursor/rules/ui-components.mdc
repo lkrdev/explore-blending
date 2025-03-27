@@ -1,0 +1,6 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+always only use components that are listed in [package.json](mdc:package.json). if there are none, use raw html components and css

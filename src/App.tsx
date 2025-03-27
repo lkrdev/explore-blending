@@ -20,8 +20,8 @@
 import { ExtensionProvider } from "@looker/extension-sdk-react";
 import React, { Suspense, useState } from "react";
 
-import { HelloWorld } from "./HelloWorld";
-
+import { AppContextProvider } from "./AppContext";
+import Main from "./Main";
 export const App: React.FC = () => {
   const [route, setRoute] = useState("");
   const [routeState, setRouteState] = useState();
@@ -34,7 +34,9 @@ export const App: React.FC = () => {
   return (
     <Suspense fallback={<></>}>
       <ExtensionProvider onRouteChange={onRouteChange}>
-        <HelloWorld route={route} routeState={routeState} />
+        <AppContextProvider>
+          <Main route={route} routeState={routeState} />
+        </AppContextProvider>
       </ExtensionProvider>
     </Suspense>
   );
