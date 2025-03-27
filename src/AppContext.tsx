@@ -63,7 +63,7 @@ export const AppContextProvider = ({
             explore_id,
             id: f.name || "",
             label: f.label || "",
-            type: (f.type || "dimension") as "dimension" | "measure",
+            type: (f.category || "dimension") as "dimension" | "measure",
           };
         });
       });

@@ -19,7 +19,7 @@ export const QueryList: React.FC = () => {
       return getExploreFields(explore);
     });
     const _explore_fields = await Promise.all(promises);
-    console.log(_explore_fields);
+
     loading.setFalse();
   };
 
@@ -41,13 +41,14 @@ export const QueryList: React.FC = () => {
                   query.explore.id,
                   field.id
                 );
+
                 return (
                   <ListItem
                     size="small"
                     key={field.id}
                     itemRole="none"
                     style={{ pointerEvents: "none" }}
-                    color={field.type}
+                    color={field_metadata?.type || field.type}
                   >
                     {field_metadata?.label || field.id}
                   </ListItem>

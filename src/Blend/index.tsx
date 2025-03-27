@@ -22,7 +22,7 @@ const Blend: React.FC<BlendProps> = () => {
           flexDirection="column"
         >
           <Heading as="h3" mb="medium">
-            Data Blending
+            Explore Blending
           </Heading>
           <Box flexGrow={1} height="100%" overflow="auto">
             <QueryList />
