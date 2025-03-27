@@ -1,6 +1,7 @@
 import { isEqual } from "lodash";
 import uniqueId from "lodash/uniqueId";
 import React, { createContext, useContext, useState } from "react";
+import { useAppContext } from "../AppContext";
 
 interface IBlendContext {
   queries: IQuery[];
@@ -10,7 +11,7 @@ interface IBlendContext {
   joins: { [key: string]: IJoin[] };
   updateJoin: (join: IJoin) => void;
   newJoin: (from_query_id: string, to_query_id: string) => void;
-  newQuery: (explore_id: string, explore_label: string) => void;
+  newQuery: (explore_id: string, explore_label: string) => Promise<void>;
   deleteQuery: (uuid: string) => void;
   updateQuery: (query: IQuery) => void;
 }
@@ -83,7 +84,9 @@ export const BlendContextProvider = ({
   );
   const [joins, setJoins] = useState<{ [key: string]: IJoin[] }>({});
 
-  const newQuery = (explore_id: string, explore_label: string) => {
+  const { getExploreFields } = useAppContext();
+
+  const newQuery = async (explore_id: string, explore_label: string) => {
     const uuid = uniqueId("query");
     const newQuery = {
       uuid,
@@ -91,6 +94,7 @@ export const BlendContextProvider = ({
       explore: { id: explore_id, label: explore_label },
       fields: [] as IQuery["fields"],
     };
+    const _explore_fields = await getExploreFields(explore_id);
     setQueries((p) => [...p, newQuery]);
     setSelectedQuery(newQuery);
   };

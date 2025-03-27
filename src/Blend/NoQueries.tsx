@@ -32,9 +32,9 @@ const NoQueries = () => {
       .sort((a, b) => String(a.label).localeCompare(String(b.label)));
   }, [models]);
 
-  const handleSelectOption = (option?: SelectOptionObject) => {
+  const handleSelectOption = async (option?: SelectOptionObject) => {
     if (option) {
-      newQuery(option.value, option.label || "");
+      await newQuery(option.value, option.label || "");
     }
   };
 

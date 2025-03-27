@@ -15,7 +15,7 @@ const EmbedExplore: React.FC<{
   const [explore, setExplore] = React.useState<LookerEmbedExplore>();
   const [debouncedQueryId, setDebouncedQueryId] = useDebounceValue(
     initial_query_id,
-    2000
+    1000
   );
   const extensionContext = useExtensionContext();
   const sdk = extensionContext?.core40SDK;
@@ -47,7 +47,7 @@ const EmbedExplore: React.FC<{
         type: "dimension",
       }));
     }
-    console.log({ newQuery });
+
     updateQuery(newQuery);
   };
 
