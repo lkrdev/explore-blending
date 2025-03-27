@@ -33,7 +33,7 @@ const Blend: React.FC<BlendProps> = () => {
       )}
 
       {/* Main Content */}
-      <Box flex={1} p="large" height="100%">
+      <Box flex={1} height="100%" position="relative">
         {queries.length === 0 && <NoQueries />}
         {queries.length > 1 && <SelectedQuery />}
       </Box>

@@ -9,7 +9,7 @@ interface BlendButtonProps {}
 
 export const BlendButton: React.FC<BlendButtonProps> = ({}) => {
   const { queries } = useBlendContext();
-  const openDialog = useBoolean(true);
+  const openDialog = useBoolean(false);
   const can_blend = queries.length > 1;
 
   const handleBlend = async () => {

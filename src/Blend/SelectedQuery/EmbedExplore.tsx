@@ -10,7 +10,16 @@ const EmbedExplore: React.FC<{
   explore_id: string;
   uuid: string;
   explore_label: string;
-}> = ({ initial_query_id, explore_id, uuid, explore_label }) => {
+  doneLoading?: () => void;
+  startLoading?: () => void;
+}> = ({
+  initial_query_id,
+  explore_id,
+  uuid,
+  explore_label,
+  doneLoading,
+  startLoading,
+}) => {
   const { updateQuery } = useBlendContext();
   const [explore, setExplore] = React.useState<LookerEmbedExplore>();
   const [debouncedQueryId, setDebouncedQueryId] = useDebounceValue(
@@ -58,6 +67,7 @@ const EmbedExplore: React.FC<{
   };
   const embedCtrRef = useCallback((el) => {
     if (el && hostUrl) {
+      startLoading?.();
       LookerEmbedSDK.init(hostUrl);
       LookerEmbedSDK.createExploreWithId(explore_id)
         .appendTo(el)
@@ -71,6 +81,9 @@ const EmbedExplore: React.FC<{
           }),
         })
         .on("page:changed", onPageChanged)
+        .on("explore:ready", () => {
+          doneLoading?.();
+        })
         .build()
         .connect()
         .then(setupExplore)

@@ -1,4 +1,5 @@
-import { isEqual } from "lodash";
+import get from "lodash/get";
+import isEqual from "lodash/isEqual";
 import uniqueId from "lodash/uniqueId";
 import React, { createContext, useContext, useState } from "react";
 import { useAppContext } from "../AppContext";
@@ -8,12 +9,20 @@ interface IBlendContext {
   setQueries: (queries: IQuery[]) => void;
   selectedQuery: IQuery | null;
   selectQuery: (query: IQuery) => void;
-  joins: { [key: string]: IJoin[] };
-  updateJoin: (join: IJoin) => void;
-  newJoin: (from_query_id: string, to_query_id: string) => void;
+  joins: { [key: string]: IQueryJoin };
+  updateJoin: (join: IJoin, type: TJoinType) => void;
+  updateJoinType: (to_query_id: string, type: TJoinType) => void;
+  newJoin: (
+    from_query_id: string,
+    to_query_id: string,
+    from_field: string,
+    to_field: string,
+    type: TJoinType
+  ) => void;
   newQuery: (explore_id: string, explore_label: string) => Promise<void>;
   deleteQuery: (uuid: string) => void;
   updateQuery: (query: IQuery) => void;
+  deleteJoin: (to_query_id: string, join_uuid: string) => void;
 }
 
 export const BlendContext = createContext<IBlendContext | undefined>(undefined);
@@ -82,7 +91,28 @@ export const BlendContextProvider = ({
   const [selectedQuery, setSelectedQuery] = useState<IQuery | null>(
     DEV_QUERIES[0]
   );
-  const [joins, setJoins] = useState<{ [key: string]: IJoin[] }>({});
+  const [joins, setJoins] = useState<{ [key: string]: IQueryJoin }>({
+    [DEV_QUERIES[1].uuid]: {
+      to_query_id: DEV_QUERIES[1].uuid,
+      joins: [
+        {
+          uuid: "join3",
+          from_query_id: "query1",
+          to_query_id: "query2",
+          from_field: "order_items_big.order_id",
+          to_field: "order_items_big.user_id",
+        },
+        {
+          uuid: "join4",
+          from_query_id: "query1",
+          to_query_id: "query2",
+          from_field: "order_items_big.created_date",
+          to_field: "order_items_big.created_date",
+        },
+      ],
+      type: "inner",
+    },
+  });
 
   const { getExploreFields } = useAppContext();
 
@@ -112,21 +142,82 @@ export const BlendContextProvider = ({
     }
   };
 
-  const updateJoin = (join: IJoin) => {
-    setJoins({
-      ...joins,
-      [join.from_query_id]: [...(joins[join.from_query_id] || []), join],
+  const updateJoinType = (to_query_id: string, type: TJoinType) => {
+    setJoins((p) => ({
+      ...p,
+      [to_query_id]: {
+        ...p[to_query_id],
+        type,
+      },
+    }));
+  };
+
+  const updateJoin = (join: IJoin, type: TJoinType) => {
+    const current_join: IQueryJoin | undefined = get(joins, [join.to_query_id]);
+    if (!current_join) {
+      newJoin(
+        join.from_query_id,
+        join.to_query_id,
+        join.from_field,
+        join.to_field,
+        type
+      );
+    } else {
+      setJoins((p) => ({
+        ...p,
+        [join.to_query_id]: {
+          ...p[join.to_query_id],
+          joins: p[join.to_query_id].joins.map((j) =>
+            j.uuid === join.uuid ? join : j
+          ),
+        },
+      }));
+    }
+  };
+  const newJoin = (
+    from_query_id: string,
+    to_query_id: string,
+    from_field: string,
+    to_field: string,
+    type: TJoinType
+  ) => {
+    setJoins((p) => {
+      const newJoin = {
+        uuid: uniqueId("join"),
+        from_query_id,
+        to_query_id,
+        from_field,
+        to_field,
+      };
+      if (p[to_query_id]) {
+        return {
+          ...p,
+          [to_query_id]: {
+            ...p[to_query_id],
+            joins: [...p[to_query_id].joins, newJoin],
+          },
+        };
+      } else {
+        const newQueryJoin = {
+          to_query_id,
+          joins: [newJoin],
+          type,
+        } as IQueryJoin;
+        return { ...p, [to_query_id]: newQueryJoin };
+      }
     });
   };
-  const newJoin = (from_query_id: string, to_query_id: string) => {
-    setJoins({
-      ...joins,
-      [from_query_id]: [
-        ...(joins[from_query_id] || []),
-        { from_query_id, to_query_id, fields: [] },
-      ],
+
+  const deleteJoin = (to_query_id: string, join_uuid: string) => {
+    setJoins((p) => {
+      const newJoins = { ...p };
+      newJoins[to_query_id].joins = newJoins[to_query_id].joins.filter(
+        (j) => j.uuid !== join_uuid
+      );
+      return newJoins;
     });
   };
+
   const deleteQuery = (uuid: string) => {
     setQueries((p) => p.filter((q) => q.uuid !== uuid));
   };
@@ -143,6 +234,8 @@ export const BlendContextProvider = ({
         newQuery,
         updateQuery,
         deleteQuery,
+        updateJoinType,
+        deleteJoin,
       }}
     >
       {children}
