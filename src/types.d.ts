@@ -1,3 +1,8 @@
+declare module "*.md" {
+  const content: string;
+  export default content;
+} 
+
 interface IQuery {
     uuid: string;
     query_id: string;

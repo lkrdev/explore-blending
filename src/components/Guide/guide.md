@@ -1,8 +1,11 @@
 # Explore Blend (alpha)
-This is an early version of a Looker extension that allows end users of looker to
+This is an early version of a Looker extension that allows explore users to blend explores together, choose join paths, and perform custom calculations (custom dimensions, custom measures and table calculations) on top of the result. It's an advenced version of merge results that lets an end user do joins on the full explore queries.
 
-> [!NOTE]
-> This is a note.
+> **Important:** 
+>
+> *use_sql_runner* permission
+>
+> There are two important caveats to this Looker extension. 1. The user using the extension needs to have `use_sql_runner` to perform the blending tasks. 2. If the user wants to share the blended queries on dashboards or looks, the end users all need the `use_sql_runner` permission.
 
 ## TODOs
 

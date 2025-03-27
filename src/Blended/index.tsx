@@ -1,6 +1,7 @@
 import { Box, Flex, Heading, Space } from "@looker/components";
 import React from "react";
 import { Redirect, useParams } from "react-router-dom";
+import LearnMoreInfoButton from "../components/Guide/LearnMoreInfoButton";
 import { APP_NAME } from "../constants";
 import { BlendedContextProvider } from "./Context";
 import EmbedExplore from "./EmbedExplore";
@@ -21,9 +22,12 @@ const Blended: React.FC = () => {
           style={{ borderRight: "1px solid #e1e1e1" }}
           flexDirection="column"
         >
-          <Heading as="h3" mb="medium">
-            {APP_NAME}
-          </Heading>
+          <Flex justifyContent="space-between">
+            <Heading as="h3" mb="medium">
+              {APP_NAME}
+            </Heading>
+            <LearnMoreInfoButton />
+          </Flex>
           <Box flexGrow={1} height="100%" overflow="auto">
             <SidebarItems />
           </Box>

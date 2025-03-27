@@ -8,6 +8,7 @@ import {
 } from "@looker/components";
 import React, { useMemo } from "react";
 import { useAppContext } from "../AppContext";
+import LearnMore from "../components/Guide/LearnMore";
 import { APP_NAME } from "../constants";
 import { useBlendContext } from "./Context";
 const NoQueries = () => {
@@ -66,6 +67,8 @@ const NoQueries = () => {
           width="100%"
         />
       </Box>
+      <LearnMore />
+      <Box height="200px"></Box>
     </Flex>
   );
 };

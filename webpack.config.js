@@ -45,6 +45,10 @@ module.exports = {
         include: /src/,
         sideEffects: false,
       },
+      {
+        test: /\.md$/,
+        use: 'raw-loader',
+      },
     ],
   },
   resolve: {
