@@ -52,7 +52,7 @@ const DEV_QUERIES = [
         type: "dimension",
       },
       {
-        id: "order_items_big.order_date",
+        id: "order_items_big.created_date",
         label: "Order Date",
         type: "dimension",
       },
@@ -73,7 +73,7 @@ const DEV_QUERIES = [
         type: "dimension",
       },
       {
-        id: "order_items_big.order_date",
+        id: "order_items_big.created_date",
         label: "Order Date",
         type: "dimension",
       },

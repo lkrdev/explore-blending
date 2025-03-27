@@ -46,12 +46,14 @@ export const AppContextProvider = ({
     if (explore_id) {
       let new_fields: { [key: string]: IExploreField } = {};
       const explore = await sdk.ok(
-        sdk.lookml_model_explore(
-          explore_id.split("::")[0],
-          explore_id.split("::")[1],
-          ""
-        )
+        sdk.lookml_model_explore({
+          lookml_model_name: explore_id.split("::")[0],
+          explore_name: explore_id.split("::")[1],
+          fields:
+            "fields(dimensions(name,label,category),measures(name,label,category))",
+        })
       );
+      console.log(explore);
       ["dimensions", "measures"].forEach((type) => {
         const fields: ILookmlModelExploreField[] = get(
           explore,

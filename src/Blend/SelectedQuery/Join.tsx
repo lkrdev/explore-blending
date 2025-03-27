@@ -73,7 +73,7 @@ const Join = () => {
         style={{ gap: "4px" }}
         width="65%"
         height="84px"
-        zIndex={1000}
+        zIndex={1}
       >
         <FieldSelect
           width="90px"

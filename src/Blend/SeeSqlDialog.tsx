@@ -2,31 +2,41 @@ import {
   Box,
   Button,
   Code,
+  CopyToClipboard,
   Dialog,
   DialogContent,
   DialogFooter,
   DialogHeader,
+  IconButton,
   Space,
   Spinner,
 } from "@looker/components";
 import React, { useEffect, useState } from "react";
+import { useExtensionContext } from "../Main";
 
 interface SeeSqlDialogProps {
   onClose: () => void;
   handleBlend: () => Promise<void>;
+  getQuerySql: () => Promise<string>;
 }
 
 export const SeeSqlDialog: React.FC<SeeSqlDialogProps> = ({
   onClose,
   handleBlend,
+  getQuerySql,
 }) => {
   const [sql, setSql] = useState<string | undefined>();
+
+  const extension = useExtensionContext();
 
   useEffect(() => {
     getSql();
   }, []);
 
-  const getSql = async () => {};
+  const getSql = async () => {
+    const sql = await getQuerySql();
+    setSql(sql);
+  };
 
   const loading = typeof sql === "undefined";
 
@@ -44,6 +54,7 @@ export const SeeSqlDialog: React.FC<SeeSqlDialogProps> = ({
           height="100%"
           backgroundColor="lightgrey"
           p="medium"
+          position="relative"
         >
           {loading && <Spinner />}
           {!loading && (
@@ -59,6 +70,16 @@ export const SeeSqlDialog: React.FC<SeeSqlDialogProps> = ({
             >
               {sql}
             </Code>
+          )}
+          {!loading && (
+            <IconButton
+              icon={<CopyToClipboard content={sql || ""} />}
+              onClick={() => extension.extensionSDK.clipboardWrite(sql || "")}
+              position="absolute"
+              top="12px"
+              right="12px"
+              tooltip="Copy SQL"
+            />
           )}
         </Box>
       </DialogContent>
