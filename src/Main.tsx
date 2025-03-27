@@ -27,7 +27,6 @@ const Main: React.FC<{
 }> = ({ route, routeState }) => {
   const { core40SDK } = useContext(ExtensionContext);
   const [message, setMessage] = useState("");
-  console.log({ route, routeState });
 
   useEffect(() => {
     const getMe = async () => {

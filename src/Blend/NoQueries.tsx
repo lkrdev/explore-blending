@@ -34,7 +34,7 @@ const NoQueries = () => {
 
   const handleSelectOption = (option?: SelectOptionObject) => {
     if (option) {
-      newQuery(option.value, option.label);
+      newQuery(option.value, option.label || "");
     }
   };
 

@@ -1,27 +1,62 @@
 import type { LookerEmbedExplore } from "@looker/embed-sdk";
 import { LookerEmbedSDK } from "@looker/embed-sdk";
-import React, { useCallback } from "react";
+import React, { useCallback, useEffect } from "react";
+import { useDebounceValue } from "usehooks-ts";
 import { EmbedContainer } from "../../components/EmbedContainer";
 import { useExtensionContext } from "../../Main";
-
+import { useBlendContext } from "../Context";
 const EmbedExplore: React.FC<{
   initial_query_id: string;
   explore_id: string;
-}> = ({ initial_query_id, explore_id }) => {
+  uuid: string;
+  explore_label: string;
+}> = ({ initial_query_id, explore_id, uuid, explore_label }) => {
+  const { updateQuery } = useBlendContext();
   const [explore, setExplore] = React.useState<LookerEmbedExplore>();
+  const [debouncedQueryId, setDebouncedQueryId] = useDebounceValue(
+    initial_query_id,
+    2000
+  );
   const extensionContext = useExtensionContext();
+  const sdk = extensionContext?.core40SDK;
+  const hostUrl = extensionContext?.extensionSDK?.lookerHostData?.hostUrl;
 
   const setupExplore = (explore: LookerEmbedExplore) => {
     setExplore(explore);
   };
-  const updateQid = (qid: string) => {
-    if (explore) {
-      explore.updateQueryId(qid);
+
+  useEffect(() => {
+    getQueryMetadata(debouncedQueryId || "");
+  }, [debouncedQueryId]);
+
+  const getQueryMetadata = async (qid: string) => {
+    const metadata = await sdk?.ok(sdk?.query(qid));
+    let newQuery: IQuery = {
+      uuid,
+      query_id: qid,
+      explore: {
+        id: explore_id,
+        label: explore_label,
+      },
+      fields: [],
+    };
+    if (metadata.fields?.length) {
+      newQuery.fields = metadata.fields.map((field) => ({
+        id: field,
+        label: field,
+        type: "dimension",
+      }));
     }
+    console.log({ newQuery });
+    updateQuery(newQuery);
+  };
+
+  const onPageChanged = async (event: any) => {
+    const url = new URL(event.page.absoluteUrl);
+    const qid = url.searchParams.get("qid");
+    setDebouncedQueryId(qid || "");
   };
   const embedCtrRef = useCallback((el) => {
-    const hostUrl = extensionContext?.extensionSDK?.lookerHostData?.hostUrl;
-    console.log({ initial_query_id, explore_id, hostUrl, el });
     if (el && hostUrl) {
       LookerEmbedSDK.init(hostUrl);
       LookerEmbedSDK.createExploreWithId(explore_id)
@@ -35,7 +70,7 @@ const EmbedExplore: React.FC<{
             background_color: "#FFFFFF",
           }),
         })
-        .on("page:changed", console.log)
+        .on("page:changed", onPageChanged)
         .build()
         .connect()
         .then(setupExplore)

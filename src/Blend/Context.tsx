@@ -2,26 +2,6 @@ import { isEqual } from "lodash";
 import uniqueId from "lodash/uniqueId";
 import React, { createContext, useContext, useState } from "react";
 
-interface IQuery {
-  uuid: string;
-  query_id: string;
-  explore: {
-    id: string;
-    label: string;
-  };
-  fields: {
-    id: string;
-    label: string;
-    type: "dimension" | "measure";
-  }[];
-}
-
-interface IJoin {
-  from_query_id: string;
-  to_query_id: string;
-  fields: string[];
-}
-
 interface IBlendContext {
   queries: IQuery[];
   setQueries: (queries: IQuery[]) => void;

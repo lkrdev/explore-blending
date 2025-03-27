@@ -12,6 +12,8 @@ const SelectedQuery = () => {
         key={selectedQuery!.uuid}
         initial_query_id={selectedQuery!.query_id}
         explore_id={selectedQuery!.explore.id}
+        uuid={selectedQuery!.uuid}
+        explore_label={selectedQuery!.explore.label}
       />
     </Flex>
   );

@@ -27,6 +27,7 @@ export const AppContextProvider = ({
 }) => {
   // Add your state management here using useState or useReducer
   const [models, setModels] = useState<ILookmlModel[]>([]);
+  const [explore_fields, setExploreFields] = useState<>([]);
   const extensionSdk = useExtensionContext();
   const sdk = extensionSdk.core40SDK;
 
