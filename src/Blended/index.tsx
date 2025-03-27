@@ -1,6 +1,7 @@
 import { Box, Flex, Heading, Space } from "@looker/components";
 import React from "react";
 import { Redirect, useParams } from "react-router-dom";
+import { APP_NAME } from "../constants";
 import { BlendedContextProvider } from "./Context";
 import EmbedExplore from "./EmbedExplore";
 import SidebarItems from "./SidebarItems";
@@ -21,7 +22,7 @@ const Blended: React.FC = () => {
           flexDirection="column"
         >
           <Heading as="h3" mb="medium">
-            Explore Blending
+            {APP_NAME}
           </Heading>
           <Box flexGrow={1} height="100%" overflow="auto">
             <SidebarItems />

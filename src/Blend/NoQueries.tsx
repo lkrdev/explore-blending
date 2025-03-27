@@ -8,8 +8,8 @@ import {
 } from "@looker/components";
 import React, { useMemo } from "react";
 import { useAppContext } from "../AppContext";
+import { APP_NAME } from "../constants";
 import { useBlendContext } from "./Context";
-
 const NoQueries = () => {
   const { models } = useAppContext();
   const { newQuery } = useBlendContext();
@@ -47,7 +47,7 @@ const NoQueries = () => {
       flexDirection="column"
     >
       <Span as="h1" textAlign="center">
-        Explore Blending
+        {APP_NAME}
       </Span>
       <br />
 

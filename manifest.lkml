@@ -1,9 +1,9 @@
-project_name: "kitchensink"
+project_name: "project_name"
 
-application: kitchensink {
-  label: "Kitchen sink"
-  url: "https://localhost:8080/bundle.js"
-  # file: "bundle.js"
+application: explore_blending {
+  label: "Explore Blending (alpha)"
+  # url: "https://localhost:8080/bundle.js"
+  file: "bundle.js"
   entitlements: {
     local_storage: yes
     navigation: yes
