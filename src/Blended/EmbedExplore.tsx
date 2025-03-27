@@ -2,30 +2,19 @@ import type { LookerEmbedExplore } from "@looker/embed-sdk";
 import { LookerEmbedSDK } from "@looker/embed-sdk";
 import React, { useCallback, useEffect } from "react";
 import { useDebounceValue } from "usehooks-ts";
-import { EmbedContainer } from "../../components/EmbedContainer";
-import { useExtensionContext } from "../../Main";
-import { useBlendContext } from "../Context";
+import { useExtensionContext } from "../Main";
+import { EmbedContainer } from "../components/EmbedContainer";
+import { useBlendedContext } from "./Context";
 const EmbedExplore: React.FC<{
-  initial_query_id: string;
   explore_id: string;
-  uuid: string;
-  explore_label: string;
   doneLoading?: () => void;
   startLoading?: () => void;
-}> = ({
-  initial_query_id,
-  explore_id,
-  uuid,
-  explore_label,
-  doneLoading,
-  startLoading,
-}) => {
-  const { updateQuery } = useBlendContext();
+}> = ({ explore_id, doneLoading, startLoading }) => {
   const [explore, setExplore] = React.useState<LookerEmbedExplore>();
-  const [debouncedQueryId, setDebouncedQueryId] = useDebounceValue(
-    initial_query_id,
-    1000
-  );
+  const [debouncedQueryId, setDebouncedQueryId] = useDebounceValue<
+    string | undefined
+  >(undefined, 1000);
+  const { setQuery } = useBlendedContext();
   const extensionContext = useExtensionContext();
   const sdk = extensionContext?.core40SDK;
   const hostUrl = extensionContext?.extensionSDK?.lookerHostData?.hostUrl;
@@ -41,24 +30,8 @@ const EmbedExplore: React.FC<{
   const getQueryMetadata = async (qid: string) => {
     if (qid?.length) {
       const metadata = await sdk?.ok(sdk?.query(qid));
-      let newQuery: IQuery = {
-        uuid,
-        query_id: qid,
-        explore: {
-          id: explore_id,
-          label: explore_label,
-        },
-        fields: [],
-      };
-      if (metadata.fields?.length) {
-        newQuery.fields = metadata.fields.map((field) => ({
-          id: field,
-          label: field,
-          type: "dimension",
-        }));
-      }
 
-      updateQuery(newQuery);
+      setQuery(metadata);
     }
   };
 
@@ -74,7 +47,6 @@ const EmbedExplore: React.FC<{
       LookerEmbedSDK.createExploreWithId(explore_id)
         .appendTo(el)
         .withParams({
-          qid: initial_query_id,
           _theme: JSON.stringify({
             show_explore_title: false,
             show_explore_actions_button: false,

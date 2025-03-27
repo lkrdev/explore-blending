@@ -2,6 +2,7 @@ import { Box, Flex, Heading, Space } from "@looker/components";
 import React from "react";
 import { BlendButton } from "./BlendButton";
 import { BlendContextProvider, useBlendContext } from "./Context";
+import NewExplore from "./NewExplore";
 import NoQueries from "./NoQueries";
 import { QueryList } from "./QueryList";
 import SelectedQuery from "./SelectedQuery";
@@ -9,7 +10,7 @@ import SelectedQuery from "./SelectedQuery";
 interface BlendProps {}
 
 const Blend: React.FC<BlendProps> = () => {
-  const { queries } = useBlendContext();
+  const { queries, selectedQuery } = useBlendContext();
 
   return (
     <Flex height="100%" width="100%" overflow="hidden">
@@ -26,6 +27,8 @@ const Blend: React.FC<BlendProps> = () => {
           </Heading>
           <Box flexGrow={1} height="100%" overflow="auto">
             <QueryList />
+            <Space />
+            <NewExplore />
           </Box>
           <Space />
           <BlendButton />
@@ -35,7 +38,9 @@ const Blend: React.FC<BlendProps> = () => {
       {/* Main Content */}
       <Box flex={1} height="100%" position="relative">
         {queries.length === 0 && <NoQueries />}
-        {queries.length > 1 && <SelectedQuery />}
+        {queries.length > 0 && Boolean(selectedQuery?.uuid) && (
+          <SelectedQuery />
+        )}
       </Box>
     </Flex>
   );

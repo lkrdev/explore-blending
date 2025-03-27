@@ -15,8 +15,9 @@
 import { ComponentsProvider } from "@looker/components";
 import { ExtensionContext } from "@looker/extension-sdk-react";
 import React, { useContext, useEffect, useState } from "react";
-import { Route, Switch } from "react-router-dom";
+import { Redirect, Route, Switch } from "react-router-dom";
 import Blend from "./Blend";
+import Blended from "./Blended";
 /**
 
  * A simple component that uses the Looker SDK through the extension sdk to display a customized hello message.
@@ -46,10 +47,17 @@ const Main: React.FC<{
       {/* @ts-ignore */}
       <Switch>
         {/* @ts-ignore */}
-        <Route exact path="/"></Route>
+        <Route exact path="/">
+          {/* @ts-ignore */}
+          <Redirect to="/blend" />
+        </Route>
         {/* @ts-ignore */}
-        <Route path="/blend">
+        <Route exact path="/blend">
           <Blend />
+        </Route>
+        {/* @ts-ignore */}
+        <Route path="/blended/:slug">
+          <Blended />
         </Route>
       </Switch>
     </ComponentsProvider>
@@ -58,6 +66,14 @@ const Main: React.FC<{
 
 export const useExtensionContext = () => {
   return useContext(ExtensionContext);
+};
+
+export const useCore40SDK = () => {
+  const { core40SDK } = useContext(ExtensionContext);
+  if (!core40SDK) {
+    throw new Error("core40SDK is not available");
+  }
+  return core40SDK;
 };
 
 export default Main;

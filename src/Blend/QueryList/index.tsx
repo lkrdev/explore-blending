@@ -32,7 +32,7 @@ export const QueryList: React.FC = () => {
           <ListItem
             key={query.uuid}
             selected={selectedQuery?.uuid === query.uuid}
-            onClick={() => selectQuery(query)}
+            onClick={() => selectQuery(query.uuid)}
           >
             <Span>{query.explore.label}</Span>
             <List density="-3">

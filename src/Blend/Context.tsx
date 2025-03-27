@@ -8,7 +8,7 @@ interface IBlendContext {
   queries: IQuery[];
   setQueries: (queries: IQuery[]) => void;
   selectedQuery: IQuery | null;
-  selectQuery: (query: IQuery) => void;
+  selectQuery: (uuid: string) => void;
   joins: { [key: string]: IQueryJoin };
   updateJoin: (join: IJoin, type: TJoinType) => void;
   updateJoinType: (to_query_id: string, type: TJoinType) => void;
@@ -19,10 +19,15 @@ interface IBlendContext {
     to_field: string,
     type: TJoinType
   ) => void;
-  newQuery: (explore_id: string, explore_label: string) => Promise<void>;
+  newQuery: (
+    explore_id: string,
+    explore_label: string,
+    create_join?: boolean
+  ) => Promise<void>;
   deleteQuery: (uuid: string) => void;
   updateQuery: (query: IQuery) => void;
   deleteJoin: (to_query_id: string, join_uuid: string) => void;
+  connection?: string;
 }
 
 export const BlendContext = createContext<IBlendContext | undefined>(undefined);
@@ -82,41 +87,45 @@ const DEV_QUERIES = [
   },
 ] as IQuery[];
 
+const DEV_JOINS = {
+  [DEV_QUERIES[1].uuid]: {
+    to_query_id: DEV_QUERIES[1].uuid,
+    joins: [
+      {
+        uuid: "join3",
+        from_query_id: "query1",
+        to_query_id: "query2",
+        from_field: "order_items_big.order_id",
+        to_field: "order_items_big.user_id",
+      },
+      {
+        uuid: "join4",
+        from_query_id: "query1",
+        to_query_id: "query2",
+        from_field: "order_items_big.created_date",
+        to_field: "order_items_big.created_date",
+      },
+    ],
+    type: "inner",
+  },
+} as { [key: string]: IQueryJoin };
+
 export const BlendContextProvider = ({
   children,
 }: {
   children: React.ReactNode;
 }) => {
-  const [queries, setQueries] = useState<IQuery[]>(DEV_QUERIES);
-  const [selectedQuery, setSelectedQuery] = useState<IQuery | null>(
-    DEV_QUERIES[0]
-  );
-  const [joins, setJoins] = useState<{ [key: string]: IQueryJoin }>({
-    [DEV_QUERIES[1].uuid]: {
-      to_query_id: DEV_QUERIES[1].uuid,
-      joins: [
-        {
-          uuid: "join3",
-          from_query_id: "query1",
-          to_query_id: "query2",
-          from_field: "order_items_big.order_id",
-          to_field: "order_items_big.user_id",
-        },
-        {
-          uuid: "join4",
-          from_query_id: "query1",
-          to_query_id: "query2",
-          from_field: "order_items_big.created_date",
-          to_field: "order_items_big.created_date",
-        },
-      ],
-      type: "inner",
-    },
-  });
+  const [queries, setQueries] = useState<IQuery[]>([]);
+  const [selectedQuery, setSelectedQuery] = useState<IQuery | null>(null);
+  const [joins, setJoins] = useState<{ [key: string]: IQueryJoin }>({});
 
   const { getExploreFields } = useAppContext();
 
-  const newQuery = async (explore_id: string, explore_label: string) => {
+  const newQuery = async (
+    explore_id: string,
+    explore_label: string,
+    create_join: boolean = false
+  ) => {
     const uuid = uniqueId("query");
     const newQuery = {
       uuid,
@@ -125,12 +134,12 @@ export const BlendContextProvider = ({
       fields: [] as IQuery["fields"],
     };
     const _explore_fields = await getExploreFields(explore_id);
+
+    if (create_join) {
+      newJoin("", uuid, "", "", "inner");
+    }
     setQueries((p) => [...p, newQuery]);
     setSelectedQuery(newQuery);
-  };
-
-  const selectQuery = (query: IQuery) => {
-    setSelectedQuery(query);
   };
 
   const updateQuery = async (query: IQuery) => {
@@ -221,13 +230,15 @@ export const BlendContextProvider = ({
   const deleteQuery = (uuid: string) => {
     setQueries((p) => p.filter((q) => q.uuid !== uuid));
   };
+  const selectQuery = (uuid: string) => {
+    setSelectedQuery(queries.find((q) => q.uuid === uuid) || null);
+  };
   return (
     <BlendContext.Provider
       value={{
         queries,
         setQueries,
         selectedQuery,
-        selectQuery,
         joins,
         updateJoin,
         newJoin,
@@ -236,6 +247,7 @@ export const BlendContextProvider = ({
         deleteQuery,
         updateJoinType,
         deleteJoin,
+        selectQuery,
       }}
     >
       {children}

@@ -1,4 +1,9 @@
-import { ILookmlModel, ILookmlModelExploreField } from "@looker/sdk";
+import {
+  IDashboard,
+  ILookmlModel,
+  ILookmlModelExploreField,
+  IUser,
+} from "@looker/sdk";
 import get from "lodash/get";
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { useExtensionContext } from "./Main";
@@ -10,6 +15,9 @@ interface IAppContext {
     explore_id: string
   ) => Promise<{ [key: string]: IExploreField }>;
   getExploreField: (explore_id: string, field_id: string) => IExploreField;
+  user: IUser | undefined;
+  dashboards: IDashboard[];
+  connections: { [key: string]: string };
 }
 
 // Create the context
@@ -35,12 +43,33 @@ export const AppContextProvider = ({
   const [explore_fields, setExploreFields] = useState<{
     [key: string]: { [key: string]: IExploreField };
   }>({});
+  const [dashboards, setDashboards] = useState<IDashboard[]>([]);
+  const [user, setUser] = useState<IUser | undefined>(undefined);
+  const [connections, setConnections] = useState<{
+    [key: string]: string;
+  }>({});
   const extensionSdk = useExtensionContext();
   const sdk = extensionSdk.core40SDK;
 
   useEffect(() => {
     getExplores();
+    getDashboards();
   }, []);
+
+  const getDashboards = async () => {
+    const user = await sdk.ok(sdk.me());
+    setUser(user);
+    const dashboards = await sdk.ok(
+      sdk.search_dashboards({ user_id: user.id })
+    );
+    if (dashboards?.length) {
+      setDashboards(
+        dashboards.sort((a, b) =>
+          String(a.title).localeCompare(String(b.title))
+        )
+      );
+    }
+  };
 
   const getExploreFields = async (explore_id: string) => {
     if (explore_id) {
@@ -50,10 +79,10 @@ export const AppContextProvider = ({
           lookml_model_name: explore_id.split("::")[0],
           explore_name: explore_id.split("::")[1],
           fields:
-            "fields(dimensions(name,label,category),measures(name,label,category))",
+            "connection_name,fields(dimensions(name,label,category),measures(name,label,category))",
         })
       );
-      console.log(explore);
+
       ["dimensions", "measures"].forEach((type) => {
         const fields: ILookmlModelExploreField[] = get(
           explore,
@@ -69,6 +98,10 @@ export const AppContextProvider = ({
           };
         });
       });
+      setConnections((p) => ({
+        ...p,
+        [explore_id]: explore.connection_name || "",
+      }));
       setExploreFields((p) => ({ ...p, [explore_id]: new_fields }));
       return new_fields;
     } else {
@@ -93,6 +126,9 @@ export const AppContextProvider = ({
         models,
         getExploreFields,
         getExploreField,
+        user,
+        dashboards,
+        connections,
       }}
     >
       {children}
