@@ -40,3 +40,7 @@ This is an early version of a Looker extension that allows explore users to blen
   - Add dashboard title saving capability
 - Add loading indicators to interactive buttons
 - Handle scroll behavior for large selected queries
+
+## Dialects
+- BigQuery (beta)
+- Postgres (beta)
