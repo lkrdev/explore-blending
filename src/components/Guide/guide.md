@@ -5,13 +5,16 @@ This is an early version of a Looker extension that allows explore users to blen
 >
 > *use_sql_runner* permission
 >
-> There are two important caveats to this Looker extension. 1. The user using the extension needs to have `use_sql_runner` to perform the blending tasks. 2. If the user wants to share the blended queries on dashboards or looks, the end users all need the `use_sql_runner` permission.
+> There are two important caveats to this Looker extension. 
+> 1. The user using the extension needs to have `use_sql_runner` to perform the blending tasks. 
+> 2. If the user wants to share the blended queries on dashboards or looks, the end users all need the `use_sql_runner` permission.
 
 ## TODOs
 
 ### Critical Bugs
 - Fix join deletion bug: When adding two joins and deleting the first join, an error occurs
-- Fix search functionality implementation
+- ~Fix explore search functionality implementation~
+- Fix dashboard search functionality implementation
 - Implement validation in `JoinRow` to prevent duplicate `to_field` usage
 
 ### Join Management
