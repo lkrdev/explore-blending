@@ -1,17 +1,15 @@
 import {
   Box,
   FieldSelect,
+  Icon,
   IconButton,
   SelectOptionGroupProps,
   SelectOptionObject,
-  Icon,
-  Space,
+  Tooltip,
 } from "@looker/components";
 import { Add, Delete, Error } from "@styled-icons/material";
 import React from "react";
-import { useBoolean } from "usehooks-ts";
 import { useBlendContext } from "../Context";
-
 
 const JoinRow = ({
   join,
@@ -56,6 +54,7 @@ const JoinRow = ({
     );
   };
   const from_value = [join.from_query_id, join.from_field].join("::");
+  const is_valid = validateJoin(join);
   return (
     <Box
       flexGrow={1}
@@ -78,7 +77,7 @@ const JoinRow = ({
         onChange={handleToFieldChange}
       />
       <IconButton
-        label = "Delete Join"
+        label="Delete Join"
         icon={<Delete fontSize={16} color="black" />}
         style={{
           alignSelf: "center",
@@ -90,20 +89,28 @@ const JoinRow = ({
         }}
       />
       <IconButton
-        label = "Add Join"
+        label="Add Join"
         icon={<Add fontSize={16} color="black" />}
         style={{
           alignSelf: "center",
           marginBottom: index === 0 ? "12px" : "0px",
           visibility: is_last ? "visible" : "hidden",
         }}
+        disabled={!is_valid}
         onClick={() => {
           newJoin("", query.uuid, "", "", join_type);
         }}
       />
-      {validateJoin(join)? null: <Space around> <Icon
-      icon={<Error fontSize={16} color="red" />}
-      /></Space>}
+      <Tooltip content="Invalid joins, please select fields">
+        <Icon
+          style={{
+            alignSelf: "center",
+            marginBottom: index === 0 ? (is_last ? "12px" : "-18px") : "0px",
+            visibility: !is_valid ? "visible" : "hidden",
+          }}
+          icon={<Error fontSize={16} color="red" />}
+        />
+      </Tooltip>
     </Box>
   );
 };

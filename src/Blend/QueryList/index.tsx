@@ -34,7 +34,7 @@ export const QueryList: React.FC = () => {
             selected={selectedQuery?.uuid === query.uuid}
             onClick={() => selectQuery(query.uuid)}
           >
-            <Span>{query.explore.label}</Span>
+            <Span>{query.explore.label + ` (${query.uuid})`}</Span>
             <List density="-3">
               {query.fields.map((field) => {
                 const field_metadata = getExploreField(

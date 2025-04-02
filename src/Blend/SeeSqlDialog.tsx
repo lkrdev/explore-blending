@@ -1,19 +1,21 @@
 import {
   Box,
-  Button,
   Code,
-  CopyToClipboard,
   Dialog,
   DialogContent,
   DialogFooter,
   DialogHeader,
   IconButton,
+  Popover,
   Space,
+  Span,
   Spinner,
 } from "@looker/components";
+import { CopyAll } from "@styled-icons/material";
+import React, { useEffect, useState } from "react";
 import { useBoolean } from "usehooks-ts";
-import React, { useEffect, useState} from "react";
 import { useExtensionContext } from "../Main";
+import LoadingButton from "../components/ProgressButton";
 
 interface SeeSqlDialogProps {
   onClose: () => void;
@@ -41,6 +43,7 @@ export const SeeSqlDialog: React.FC<SeeSqlDialogProps> = ({
 
   const loading = typeof sql === "undefined";
   const loading_button = useBoolean(false);
+  const copying = useBoolean(false);
 
   return (
     <Dialog isOpen={true} width="60vw" onClose={onClose} height="90vh">
@@ -74,39 +77,54 @@ export const SeeSqlDialog: React.FC<SeeSqlDialogProps> = ({
             </Code>
           )}
           {!loading && (
-            <IconButton
-              icon={<CopyToClipboard content={sql || ""} />}
-              onClick={() => extension.extensionSDK.clipboardWrite(sql || "")}
-              position="absolute"
-              top="12px"
-              right="12px"
-              tooltip="Copy SQL"
-            />
+            <Popover
+              disableScrollLock
+              placement="left"
+              key={String(copying.value)}
+              content={
+                <Span fontSize={"xxsmall"} p="xxsmall">
+                  Copied!
+                </Span>
+              }
+              isOpen={copying.value}
+            >
+              <IconButton
+                icon={<CopyAll size={24} color="black" />}
+                onClick={() => {
+                  extension.extensionSDK.clipboardWrite(sql || "");
+                  copying.setTrue();
+                  setTimeout(() => {
+                    copying.setFalse();
+                  }, 1000);
+                }}
+                position="absolute"
+                top="12px"
+                right="12px"
+                tooltip="Copy SQL"
+                style={{ alignSelf: "flex-start" }}
+              />
+            </Popover>
           )}
         </Box>
       </DialogContent>
+
       <DialogFooter>
         <Box display="flex" justifyContent="flex-end">
           <Space>
-            <Button
+            <LoadingButton
+              flexGrow={false}
+              is_loading={loading_button.value}
               onClick={async () => {
-                loading_button.setTrue(); 
+                loading_button.setTrue();
                 await handleBlend();
                 onClose();
-                loading_button.setFalse(); 
+                loading_button.setFalse();
               }}
               disabled={loading_button.value}
-              isLoading = {loading_button.value} 
               color="key"
             >
-              {loading_button.value ? <Spinner size ={24} color="black"
-              style={{
-                opacity: 1 ,
-                filter: "brightness(0)",
-                borderWidth: "6px",
-              }} 
-              /> : "Blend"}
-            </Button>
+              Blend
+            </LoadingButton>
           </Space>
         </Box>
       </DialogFooter>
