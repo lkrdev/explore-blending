@@ -118,7 +118,7 @@ const BlendBase: React.FC = () => {
           return acc;
         } else {
           acc.push({
-            uuid: uniqueId("queryy"),
+            uuid: uniqueId("q_"),
             query_id: q.client_id!,
             explore: {
               id: explore.id,

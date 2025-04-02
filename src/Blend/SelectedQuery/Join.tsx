@@ -37,7 +37,7 @@ const Join = () => {
             };
             if (!current_group) {
               from_fields.push({
-                label: `${query.explore.label} (${index})`,
+                label: `${query.explore.label} (${query.uuid})`,
                 options: [new_option],
               });
             } else {

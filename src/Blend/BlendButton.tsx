@@ -1,8 +1,9 @@
-import { Box, Button, IconButton, Space, Spinner } from "@looker/components";
-import { Code } from "@styled-icons/material";
+import { Box, Icon, IconButton, Space, Tooltip } from "@looker/components";
+import { Code, Error } from "@styled-icons/material";
 import React from "react";
 import { useBoolean } from "usehooks-ts";
 import { useAppContext } from "../AppContext";
+import LoadingButton from "../components/ProgressButton";
 import { useSearchParams } from "../hooks/useSearchParams";
 import { useExtensionContext } from "../Main";
 import { useBlendContext } from "./Context";
@@ -76,7 +77,7 @@ const getFieldSelectList = (queries: IQuery[], dialect: string) => {
 };
 
 export const BlendButton: React.FC<BlendButtonProps> = ({}) => {
-  const { queries, joins } = useBlendContext();
+  const { queries, joins, validateJoins } = useBlendContext();
   const { models, connections } = useAppContext();
   const openDialog = useBoolean(false);
   const can_blend = queries.length > 1;
@@ -150,38 +151,39 @@ SELECT ${getFieldSelectList(queries, dialect)} FROM ${[queries[0].uuid]}
     }
     loading.setFalse();
   };
-
+  const invalid_joins = validateJoins();
+  const invalid_joins_text =
+    invalid_joins.length > 0
+      ? `Invalid joins: ${invalid_joins.map((j) => j.to_query_id).join(", ")}`
+      : "";
+  const disabled = !can_blend || loading.value || invalid_joins.length > 0;
   return (
     <Box display="flex" dir="row" width="100%" justifyContent="space-between">
-      <Space width="85%">
-        <Button
-          fullWidth
-          size="medium"
+      <Space width="100%" gap="small">
+        <LoadingButton
+          flexGrow={true}
+          is_loading={loading.value}
           onClick={handleBlend}
-          disabled={!can_blend || loading.value}
-          isLoading={loading.value}
+          disabled={disabled}
         >
-          {loading.value ? (
-            <Spinner
-              size={24}
-              color="black"
-              style={{
-                opacity: 1,
-                filter: "brightness(0)",
-                borderWidth: "6px",
-              }}
-            />
-          ) : (
-            "Blend"
-          )}
-        </Button>
+          Blend
+        </LoadingButton>
         <IconButton
           size="medium"
           onClick={openDialog.setTrue}
-          disabled={!can_blend || loading.value}
-          icon={<Code size={24} />}
+          disabled={!can_blend || loading.value || invalid_joins.length > 0}
+          icon={<Code size={24} color="black" />}
           tooltip="SQL"
         />
+        <Tooltip content={invalid_joins_text}>
+          <Icon
+            size="medium"
+            icon={<Error size={24} />}
+            style={{
+              visibility: invalid_joins_text.length ? "visible" : "hidden",
+            }}
+          />
+        </Tooltip>
       </Space>
       {openDialog.value && (
         <SeeSqlDialog

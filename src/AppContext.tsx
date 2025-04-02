@@ -1,9 +1,4 @@
-import {
-  IDashboard,
-  ILookmlModel,
-  ILookmlModelExploreField,
-  IUser,
-} from "@looker/sdk";
+import { ILookmlModel, ILookmlModelExploreField, IUser } from "@looker/sdk";
 import get from "lodash/get";
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { useExtensionContext } from "./Main";
@@ -16,7 +11,6 @@ interface IAppContext {
   ) => Promise<{ [key: string]: IExploreField }>;
   getExploreField: (explore_id: string, field_id: string) => IExploreField;
   user: IUser | undefined;
-  dashboards: IDashboard[];
   connections: { [key: string]: string };
 }
 
@@ -43,7 +37,6 @@ export const AppContextProvider = ({
   const [explore_fields, setExploreFields] = useState<{
     [key: string]: { [key: string]: IExploreField };
   }>({});
-  const [dashboards, setDashboards] = useState<IDashboard[]>([]);
   const [user, setUser] = useState<IUser | undefined>(undefined);
   const [connections, setConnections] = useState<{
     [key: string]: string;
@@ -53,22 +46,12 @@ export const AppContextProvider = ({
 
   useEffect(() => {
     getExplores();
-    getDashboards();
+    getUser();
   }, []);
 
-  const getDashboards = async () => {
+  const getUser = async () => {
     const user = await sdk.ok(sdk.me());
     setUser(user);
-    const dashboards = await sdk.ok(
-      sdk.search_dashboards({ user_id: user.id })
-    );
-    if (dashboards?.length) {
-      setDashboards(
-        dashboards.sort((a, b) =>
-          String(a.title).localeCompare(String(b.title))
-        )
-      );
-    }
   };
 
   const getExploreFields = async (explore_id: string) => {
@@ -127,7 +110,6 @@ export const AppContextProvider = ({
         getExploreFields,
         getExploreField,
         user,
-        dashboards,
         connections,
       }}
     >

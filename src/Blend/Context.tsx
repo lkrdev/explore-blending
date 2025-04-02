@@ -30,6 +30,7 @@ interface IBlendContext {
   deleteJoin: (to_query_id: string, join_uuid: string) => void;
   connection?: string;
   validateJoin: (join: IJoin) => boolean;
+  validateJoins: () => IQueryJoin[];
 }
 
 export const BlendContext = createContext<IBlendContext | undefined>(undefined);
@@ -297,8 +298,11 @@ export const BlendContextProvider = ({
     }
   };
 
-  const validateJoins = (uuid: string) => {
-    setSelectedQuery(queries.find((q) => q.uuid === uuid) || null);
+  const validateJoins = () => {
+    const invalid_joins = Object.values(joins).filter((j) => {
+      return j.joins.some((join) => !validateJoin(join));
+    });
+    return invalid_joins;
   };
 
   return (
@@ -317,6 +321,7 @@ export const BlendContextProvider = ({
         deleteJoin,
         selectQuery,
         validateJoin,
+        validateJoins,
       }}
     >
       {children}
