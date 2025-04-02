@@ -3,6 +3,7 @@ import { Code } from "@styled-icons/material";
 import React from "react";
 import { useBoolean } from "usehooks-ts";
 import { useAppContext } from "../AppContext";
+import { useSearchParams } from "../hooks/useSearchParams";
 import { useExtensionContext } from "../Main";
 import { useBlendContext } from "./Context";
 import { SeeSqlDialog } from "./SeeSqlDialog";
@@ -51,7 +52,6 @@ const fieldGetter = (
   field: Pick<IQuery["fields"][number], "id">,
   dialect: string
 ) => {
-  console.log(uuid, field, dialect);
   if (dialect === "bigquery_standard_sql") {
     return `${uuid}.${field.id.replace(".", "_")}`;
   }
@@ -82,7 +82,8 @@ export const BlendButton: React.FC<BlendButtonProps> = ({}) => {
   const can_blend = queries.length > 1;
   const sdk = useExtensionContext().core40SDK;
   const extension = useExtensionContext().extensionSDK;
-  const getQuerySql = async (dialect: string) => {
+  const { search_params } = useSearchParams();
+  const getQuerySql = async (dialect: string, b_query_param: string) => {
     const promises = queries.map((q) => {
       return sdk.ok(
         sdk.run_query({
@@ -102,7 +103,9 @@ export const BlendButton: React.FC<BlendButtonProps> = ({}) => {
       }),
       {} as { [key: string]: string }
     );
-    const new_sql = `WITH ${`${queries
+    const new_sql = `
+${b_query_param?.length ? `-- b=${b_query_param}` : ""}
+WITH ${`${queries
       .map(
         (q, i) => `${q.uuid} AS (
     ${query_sql[q.uuid as keyof typeof query_sql]}
@@ -124,7 +127,10 @@ SELECT ${getFieldSelectList(queries, dialect)} FROM ${[queries[0].uuid]}
   const handleBlend = async () => {
     const connection = connections[queries[0].explore.id];
     const connection_meta = await sdk.ok(sdk.connection(connection));
-    const query_sql = await getQuerySql(connection_meta.dialect_name || "");
+    const query_sql = await getQuerySql(
+      connection_meta.dialect_name || "",
+      search_params.get("b") || ""
+    );
 
     const create_sql = await sdk.ok(
       sdk.create_sql_query({
@@ -168,7 +174,7 @@ SELECT ${getFieldSelectList(queries, dialect)} FROM ${[queries[0].uuid]}
           getQuerySql={async () => {
             const connection = connections[queries[0].explore.id];
             const connection_meta = await sdk.ok(sdk.connection(connection));
-            return getQuerySql(connection_meta.dialect_name || "");
+            return getQuerySql(connection_meta.dialect_name || "", "");
           }}
         />
       )}
