@@ -72,7 +72,7 @@ const NoQueries = () => {
       flexDirection="column"
     >
       <Span as="h1" textAlign="center">
-        {APP_NAME}
+        🔗 {APP_NAME}
       </Span>
       <br />
 

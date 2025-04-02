@@ -29,6 +29,7 @@ interface IBlendContext {
   updateQuery: (query: IQuery) => void;
   deleteJoin: (to_query_id: string, join_uuid: string) => void;
   connection?: string;
+  validateJoin: (join: IJoin) => boolean;
 }
 
 export const BlendContext = createContext<IBlendContext | undefined>(undefined);
@@ -286,6 +287,20 @@ export const BlendContextProvider = ({
     setSelectedQuery(queries.find((q) => q.uuid === uuid) || null);
   };
 
+  const validateJoin = (join: IJoin) => {
+    if (!join.from_field?.length) {
+      return false;
+    } else if (!join.to_field?.length) {
+      return false;
+    } else {
+      return true;
+    }
+  };
+
+  const validateJoins = (uuid: string) => {
+    setSelectedQuery(queries.find((q) => q.uuid === uuid) || null);
+  };
+
   return (
     <BlendContext.Provider
       value={{
@@ -301,6 +316,7 @@ export const BlendContextProvider = ({
         updateJoinType,
         deleteJoin,
         selectQuery,
+        validateJoin,
       }}
     >
       {children}

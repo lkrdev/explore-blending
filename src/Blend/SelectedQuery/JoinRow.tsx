@@ -4,10 +4,14 @@ import {
   IconButton,
   SelectOptionGroupProps,
   SelectOptionObject,
+  Icon,
+  Space,
 } from "@looker/components";
-import { Add, Delete } from "@styled-icons/material";
+import { Add, Delete, Error } from "@styled-icons/material";
 import React from "react";
+import { useBoolean } from "usehooks-ts";
 import { useBlendContext } from "../Context";
+
 
 const JoinRow = ({
   join,
@@ -28,7 +32,7 @@ const JoinRow = ({
   is_last: boolean;
   join_length: number;
 }) => {
-  const { updateJoin, newJoin, deleteJoin } = useBlendContext();
+  const { updateJoin, newJoin, deleteJoin, validateJoin } = useBlendContext();
 
   const handleToFieldChange = (value: string) => {
     updateJoin(
@@ -74,6 +78,7 @@ const JoinRow = ({
         onChange={handleToFieldChange}
       />
       <IconButton
+        label = "Delete Join"
         icon={<Delete fontSize={16} color="black" />}
         style={{
           alignSelf: "center",
@@ -85,7 +90,7 @@ const JoinRow = ({
         }}
       />
       <IconButton
-        color="black"
+        label = "Add Join"
         icon={<Add fontSize={16} color="black" />}
         style={{
           alignSelf: "center",
@@ -96,6 +101,9 @@ const JoinRow = ({
           newJoin("", query.uuid, "", "", join_type);
         }}
       />
+      {validateJoin(join)? null: <Space around> <Icon
+      icon={<Error fontSize={16} color="red" />}
+      /></Space>}
     </Box>
   );
 };
