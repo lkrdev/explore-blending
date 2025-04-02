@@ -1,8 +1,9 @@
 import get from "lodash/get";
 import isEqual from "lodash/isEqual";
 import uniqueId from "lodash/uniqueId";
-import React, { createContext, useContext, useState } from "react";
+import React, { createContext, useContext, useEffect, useState } from "react";
 import { useAppContext } from "../AppContext";
+import { useSearchParams } from "../hooks/useSearchParams";
 
 interface IBlendContext {
   queries: IQuery[];
@@ -44,7 +45,7 @@ export const useBlendContext = () => {
 
 const DEV_QUERIES = [
   {
-    uuid: uniqueId("query"),
+    uuid: uniqueId("q"),
     query_id: "K4ujJR7yBqjYsSPyD1O7YY",
     explore: {
       id: "az_load_test::order_items_big",
@@ -65,7 +66,7 @@ const DEV_QUERIES = [
     ],
   },
   {
-    uuid: uniqueId("query"),
+    uuid: uniqueId("q"),
     query_id: "onOhaqYIvzMpyt58cZ7JHV",
     explore: {
       id: "az_load_test::order_items_big",
@@ -110,16 +111,67 @@ const DEV_JOINS = {
   },
 } as { [key: string]: IQueryJoin };
 
+const setBlendData = (blend_data: IBlendData) => {
+  if (
+    blend_data.queries.length === 0 &&
+    Object.keys(blend_data.joins).length === 0
+  ) {
+    return undefined;
+  }
+  const translateJoinsToQueryIds: (ITranslatedJoin | undefined)[] =
+    blend_data.queries.map((q, i) => {
+      const found_join = blend_data.joins[q.uuid];
+      if (found_join) {
+        return {
+          type: found_join.type,
+          joins: found_join.joins.map((j) => {
+            const from_query = blend_data.queries.findIndex(
+              (q) => q.uuid === j.from_query_id
+            );
+            return {
+              from_query_index: from_query,
+              from_field: j.from_field,
+              to_field: j.to_field,
+            };
+          }),
+        } as ITranslatedJoin;
+      } else {
+        return undefined;
+      }
+    });
+  return btoa(
+    JSON.stringify({
+      queries: blend_data.queries.map((q) => q.query_id),
+      joins: translateJoinsToQueryIds,
+    })
+  );
+};
+
 export const BlendContextProvider = ({
+  blend_data,
   children,
 }: {
+  blend_data?: IBlendData;
   children: React.ReactNode;
 }) => {
-  const [queries, setQueries] = useState<IQuery[]>([]);
-  const [selectedQuery, setSelectedQuery] = useState<IQuery | null>(null);
-  const [joins, setJoins] = useState<{ [key: string]: IQueryJoin }>({});
+  const [queries, setQueries] = useState<IQuery[]>(blend_data?.queries || []);
+  const [selectedQuery, setSelectedQuery] = useState<IQuery | null>(
+    blend_data?.queries.length
+      ? blend_data?.queries[blend_data.queries.length - 1]
+      : null
+  );
+  const [joins, setJoins] = useState<{ [key: string]: IQueryJoin }>(
+    blend_data?.joins || {}
+  );
+  const { setSearchParams } = useSearchParams();
 
   const { getExploreFields } = useAppContext();
+
+  useEffect(() => {
+    setSearchParams({
+      b: setBlendData({ queries, joins }),
+    });
+  }, [queries, joins]);
 
   const newQuery = async (
     explore_id: string,
@@ -233,6 +285,7 @@ export const BlendContextProvider = ({
   const selectQuery = (uuid: string) => {
     setSelectedQuery(queries.find((q) => q.uuid === uuid) || null);
   };
+
   return (
     <BlendContext.Provider
       value={{

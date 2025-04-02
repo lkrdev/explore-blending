@@ -9,11 +9,15 @@ This is an early version of a Looker extension that allows explore users to blen
 > 1. The user using the extension needs to have `use_sql_runner` to perform the blending tasks. 
 > 2. If the user wants to share the blended queries on dashboards or looks, the end users all need the `use_sql_runner` permission.
 
+
+## Dialect Support
+- BigQuery (beta)
+- Postgres (beta)
+
 ## TODOs
 
 ### Critical Bugs
 - Fix join deletion bug: When adding two joins and deleting the first join, an error occurs
-- ~Fix explore search functionality implementation~
 - Fix dashboard search functionality implementation
 - Implement validation in `JoinRow` to prevent duplicate `to_field` usage
 
@@ -23,7 +27,7 @@ This is an early version of a Looker extension that allows explore users to blen
   - Options:
     1. (Preferred) Auto-determine required join order based on relationships
     2. (Simple) Use sidepanel order as join order
-- Extend join support beyond BigQuery
+- Extend join support beyond BigQuery/Postgres
 - Verify complete `IJoin` objects and query usage in `BlendButton`
 
 ### Query Management
@@ -33,9 +37,7 @@ This is an early version of a Looker extension that allows explore users to blen
 - Handle large query display with proper scrolling behavior
 
 ### URL/State Management
-- Implement search params persistence:
-  - Save and initialize query IDs
-  - Save and restore join configurations
+- Restore blend from saved SQL using -- b=
 
 ### UI Improvements
 - Enhance dashboard functionality:
@@ -43,7 +45,3 @@ This is an early version of a Looker extension that allows explore users to blen
   - Add dashboard title saving capability
 - Add loading indicators to interactive buttons
 - Handle scroll behavior for large selected queries
-
-## Dialects
-- BigQuery (beta)
-- Postgres (beta)

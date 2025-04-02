@@ -45,7 +45,7 @@ export const QueryList: React.FC = () => {
                 return (
                   <ListItem
                     size="small"
-                    key={field.id}
+                    key={`${query.uuid}-${field.id}`}
                     itemRole="none"
                     style={{ pointerEvents: "none" }}
                     color={field_metadata?.type || field.type}

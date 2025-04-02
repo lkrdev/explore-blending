@@ -36,3 +36,20 @@ interface IQuery {
   }
 
   type TJoinType = "inner" | "left" | "right" | "full" | "cross";
+
+
+interface IBlendData {
+  queries: IQuery[];
+  joins: { [key: string]: IQueryJoin };
+}
+
+interface ITranslatedJoin {
+  type: TJoinType;
+  joins: ITranslatedJoinItem[];
+}
+
+interface ITranslatedJoinItem {
+  from_query_index: number;
+  from_field: string;
+  to_field: string;
+}
