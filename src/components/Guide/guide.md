@@ -1,5 +1,5 @@
 # Explore Blend (alpha)
-This is an early version of a Looker extension that allows explore users to blend explores together, choose join paths, and perform custom calculations (custom dimensions, custom measures and table calculations) on top of the result. It's an advenced version of merge results that lets an end user do joins on the full explore queries.
+This is an early version of a Looker extension that allows explore users to blend explores together, choose join paths, and perform custom calculations (custom dimensions, custom measures and table calculations) on top of the result. It's an advanced version of merge results that lets an end user do joins on the full explore queries.
 
 > **Important:** 
 >

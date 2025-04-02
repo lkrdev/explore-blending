@@ -1,4 +1,4 @@
-import { Box, Button, IconButton, Space } from "@looker/components";
+import { Box, Button, IconButton, Space, Spinner } from "@looker/components";
 import { Code } from "@styled-icons/material";
 import React from "react";
 import { useBoolean } from "usehooks-ts";
@@ -80,6 +80,7 @@ export const BlendButton: React.FC<BlendButtonProps> = ({}) => {
   const { models, connections } = useAppContext();
   const openDialog = useBoolean(false);
   const can_blend = queries.length > 1;
+  const loading = useBoolean(false);
   const sdk = useExtensionContext().core40SDK;
   const extension = useExtensionContext().extensionSDK;
   const { search_params } = useSearchParams();
@@ -125,6 +126,7 @@ SELECT ${getFieldSelectList(queries, dialect)} FROM ${[queries[0].uuid]}
   };
 
   const handleBlend = async () => {
+    loading.setTrue();
     const connection = connections[queries[0].explore.id];
     const connection_meta = await sdk.ok(sdk.connection(connection));
     const query_sql = await getQuerySql(
@@ -146,6 +148,7 @@ SELECT ${getFieldSelectList(queries, dialect)} FROM ${[queries[0].uuid]}
     } else {
       console.error("Failed to create SQL query");
     }
+    loading.setFalse();
   };
 
   return (
@@ -155,14 +158,27 @@ SELECT ${getFieldSelectList(queries, dialect)} FROM ${[queries[0].uuid]}
           fullWidth
           size="medium"
           onClick={handleBlend}
-          disabled={!can_blend}
+          disabled={!can_blend || loading.value}
+          isLoading={loading.value}
         >
-          Blend
+          {loading.value ? (
+            <Spinner
+              size={24}
+              color="black"
+              style={{
+                opacity: 1,
+                filter: "brightness(0)",
+                borderWidth: "6px",
+              }}
+            />
+          ) : (
+            "Blend"
+          )}
         </Button>
         <IconButton
           size="medium"
           onClick={openDialog.setTrue}
-          disabled={!can_blend}
+          disabled={!can_blend || loading.value}
           icon={<Code size={24} />}
           tooltip="SQL"
         />

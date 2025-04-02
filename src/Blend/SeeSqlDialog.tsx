@@ -11,7 +11,8 @@ import {
   Space,
   Spinner,
 } from "@looker/components";
-import React, { useEffect, useState } from "react";
+import { useBoolean } from "usehooks-ts";
+import React, { useEffect, useState} from "react";
 import { useExtensionContext } from "../Main";
 
 interface SeeSqlDialogProps {
@@ -39,6 +40,7 @@ export const SeeSqlDialog: React.FC<SeeSqlDialogProps> = ({
   };
 
   const loading = typeof sql === "undefined";
+  const loading_button = useBoolean(false);
 
   return (
     <Dialog isOpen={true} width="60vw" onClose={onClose} height="90vh">
@@ -88,12 +90,22 @@ export const SeeSqlDialog: React.FC<SeeSqlDialogProps> = ({
           <Space>
             <Button
               onClick={async () => {
+                loading_button.setTrue(); 
                 await handleBlend();
                 onClose();
+                loading_button.setFalse(); 
               }}
+              disabled={loading_button.value}
+              isLoading = {loading_button.value} 
               color="key"
             >
-              Blend
+              {loading_button.value ? <Spinner size ={24} color="black"
+              style={{
+                opacity: 1 ,
+                filter: "brightness(0)",
+                borderWidth: "6px",
+              }} 
+              /> : "Blend"}
             </Button>
           </Space>
         </Box>

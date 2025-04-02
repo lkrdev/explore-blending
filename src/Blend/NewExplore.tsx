@@ -56,7 +56,9 @@ const NewExplore: React.FC = () => {
 
   const handleSelectOption = async (option?: SelectOptionObject) => {
     if (option) {
+      //activate blending button IF query length is above 0, could I rather keep it hidden or deactivated?
       await newQuery(option.value, option.label || "", queries.length > 0);
+      //await newQuery(option.value, option.label || "", false); // <-- Forced blending to false
     }
   };
 
