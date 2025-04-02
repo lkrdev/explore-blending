@@ -140,7 +140,7 @@ const BlendBase: React.FC = () => {
               to_query_id: query.uuid,
               type: join.type,
               joins: join.joins.map((j) => ({
-                uuid: uniqueId("joinn"),
+                uuid: uniqueId("j_"),
                 from_query_id: queries[j.from_query_index]?.uuid || "",
                 to_query_id: query.uuid,
                 from_field: j.from_field,
