@@ -31,6 +31,7 @@ interface IBlendContext {
   connection?: string;
   validateJoin: (join: IJoin) => boolean;
   validateJoins: () => IQueryJoin[];
+  first_query_connection?: string;
 }
 
 export const BlendContext = createContext<IBlendContext | undefined>(undefined);
@@ -167,7 +168,7 @@ export const BlendContextProvider = ({
   );
   const { setSearchParams } = useSearchParams();
 
-  const { getExploreFields } = useAppContext();
+  const { getExploreFields, connections } = useAppContext();
 
   useEffect(() => {
     setSearchParams({
@@ -180,7 +181,7 @@ export const BlendContextProvider = ({
     explore_label: string,
     create_join: boolean = false
   ) => {
-    const uuid = uniqueId("query");
+    const uuid = uniqueId("q");
     const newQuery = {
       uuid,
       query_id: "",
@@ -246,7 +247,7 @@ export const BlendContextProvider = ({
   ) => {
     setJoins((p) => {
       const newJoin = {
-        uuid: uniqueId("join"),
+        uuid: uniqueId("k"),
         from_query_id,
         to_query_id,
         from_field,
@@ -305,6 +306,8 @@ export const BlendContextProvider = ({
     return invalid_joins;
   };
 
+  const first_query_connection = connections[queries[0]?.explore?.id];
+
   return (
     <BlendContext.Provider
       value={{
@@ -322,6 +325,7 @@ export const BlendContextProvider = ({
         selectQuery,
         validateJoin,
         validateJoins,
+        first_query_connection,
       }}
     >
       {children}

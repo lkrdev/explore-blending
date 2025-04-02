@@ -2,7 +2,6 @@ import { Box, Icon, IconButton, Space, Tooltip } from "@looker/components";
 import { Code, Error } from "@styled-icons/material";
 import React from "react";
 import { useBoolean } from "usehooks-ts";
-import { useAppContext } from "../AppContext";
 import LoadingButton from "../components/ProgressButton";
 import { useSearchParams } from "../hooks/useSearchParams";
 import { useExtensionContext } from "../Main";
@@ -77,8 +76,8 @@ const getFieldSelectList = (queries: IQuery[], dialect: string) => {
 };
 
 export const BlendButton: React.FC<BlendButtonProps> = ({}) => {
-  const { queries, joins, validateJoins } = useBlendContext();
-  const { models, connections } = useAppContext();
+  const { queries, joins, validateJoins, first_query_connection } =
+    useBlendContext();
   const openDialog = useBoolean(false);
   const can_blend = queries.length > 1;
   const loading = useBoolean(false);
@@ -128,8 +127,13 @@ SELECT ${getFieldSelectList(queries, dialect)} FROM ${[queries[0].uuid]}
 
   const handleBlend = async () => {
     loading.setTrue();
-    const connection = connections[queries[0].explore.id];
-    const connection_meta = await sdk.ok(sdk.connection(connection));
+    if (!first_query_connection) {
+      console.error("No connection found");
+      return;
+    }
+    const connection_meta = await sdk.ok(
+      sdk.connection(first_query_connection)
+    );
     const query_sql = await getQuerySql(
       connection_meta.dialect_name || "",
       search_params.get("b") || ""
@@ -138,7 +142,7 @@ SELECT ${getFieldSelectList(queries, dialect)} FROM ${[queries[0].uuid]}
     const create_sql = await sdk.ok(
       sdk.create_sql_query({
         sql: query_sql,
-        connection_name: connection,
+        connection_name: first_query_connection,
       })
     );
 
@@ -190,9 +194,15 @@ SELECT ${getFieldSelectList(queries, dialect)} FROM ${[queries[0].uuid]}
           onClose={openDialog.setFalse}
           handleBlend={handleBlend}
           getQuerySql={async () => {
-            const connection = connections[queries[0].explore.id];
-            const connection_meta = await sdk.ok(sdk.connection(connection));
-            return getQuerySql(connection_meta.dialect_name || "", "");
+            if (!first_query_connection) {
+              console.error("No connection found");
+              return Promise.resolve("");
+            } else {
+              const connection_meta = await sdk.ok(
+                sdk.connection(first_query_connection)
+              );
+              return getQuerySql(connection_meta.dialect_name || "", "");
+            }
           }}
         />
       )}

@@ -11,18 +11,33 @@ import { useAppContext } from "../AppContext";
 import { useBlendContext } from "./Context";
 
 const NewExplore: React.FC = () => {
-  const { models } = useAppContext();
-  const { newQuery, queries } = useBlendContext();
+  const { models, connections } = useAppContext();
+  const { newQuery, queries, first_query_connection } = useBlendContext();
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useDebounceValue(search, 500);
   const grouped: SelectOptionGroupProps[] = useMemo(() => {
     return models
       .reduce((acc, model) => {
         if (model?.explores?.length) {
+          console.log({
+            connections,
+            first_query_connection,
+            explore_id: `${model.name}::${model?.explores[0]?.name}`,
+            connection:
+              connections[`${model.name}::${model?.explores[0]?.name}`],
+          });
           const model_term = `${model.label} ${model.name}`.toLowerCase();
           const explores = model?.explores?.reduce((acc, explore) => {
             const explore_term =
               `${explore.label} ${explore.name}`.toLowerCase();
+            if (
+              first_query_connection !==
+              connections[`${model.name}::${explore.name}`]
+            ) {
+              // if its not part of the first connection, don't add it
+              return acc;
+            }
+
             if (!debouncedSearch?.length) {
               return [...acc, explore];
             } else {
