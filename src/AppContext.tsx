@@ -1,4 +1,9 @@
-import { ILookmlModel, ILookmlModelExploreField, IUser } from "@looker/sdk";
+import {
+  ILookmlModel,
+  ILookmlModelExplore,
+  ILookmlModelExploreField,
+  IUser,
+} from "@looker/sdk";
 import get from "lodash/get";
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { useExtensionContext } from "./Main";
@@ -38,6 +43,7 @@ export const AppContextProvider = ({
     [key: string]: { [key: string]: IExploreField };
   }>({});
   const [user, setUser] = useState<IUser | undefined>(undefined);
+  // { [explore_id]: connection_name }
   const [connections, setConnections] = useState<{
     [key: string]: string;
   }>({});
@@ -100,6 +106,33 @@ export const AppContextProvider = ({
     const models = await sdk.ok(sdk.all_lookml_models({}));
     if (models?.length) {
       setModels(models);
+      const promises = models.reduce((acc, model) => {
+        const first_explore = model.explores?.[0];
+        if (first_explore && model.name && first_explore.name) {
+          acc.push(
+            sdk.ok(
+              sdk.lookml_model_explore({
+                lookml_model_name: model.name,
+                explore_name: first_explore.name,
+                fields: "connection_name",
+              })
+            )
+          );
+        } else {
+          acc.push(Promise.resolve({} as ILookmlModelExplore));
+        }
+        return acc;
+      }, [] as Promise<ILookmlModelExplore>[]);
+      const connections = await Promise.all(promises);
+      const new_explore_connections: { [key: string]: string } = {};
+      connections.forEach((c, i) => {
+        const model = models[i];
+        model.explores?.forEach((e) => {
+          const explore_id = `${model.name}::${e.name}`;
+          new_explore_connections[explore_id] = c.connection_name || "";
+        });
+      });
+      setConnections(new_explore_connections);
     }
   };
 

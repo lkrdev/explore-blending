@@ -31,8 +31,8 @@ This is an early version of a Looker extension that allows explore users to blen
   - Queries must be joined in a valid dependency order
   - Options:
     1. (Preferred) Auto-determine required join order based on relationships
-    2. (Simple) Use sidepanel order as join order
-- Extend join support beyond BigQuery/Postgres (Snowflake next?)
+    2. (Simple) Use sidepanel order as join order (don't let a user select fields from later joins)
+- Extend join support beyond BigQuery/Postgres (Snowflake next? Will any changes need to be made?)
 
 ### Query Management
 - Filter explore list to show only explores from the current connection
