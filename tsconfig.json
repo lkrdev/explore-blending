@@ -1,10 +1,11 @@
 {
   "compilerOptions": {
     "jsx": "react",
-    "lib": ["dom", "es2015"],
+    "lib": ["DOM", "ES2015"],
     "sourceMap": true,
     "strict": true,
-    "esModuleInterop": true
+    "esModuleInterop": true,
+    //"types": ["node","jest"]
   },
   "exclude": ["node_modules"]
 }
