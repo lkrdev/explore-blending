@@ -449,7 +449,7 @@ export const BlendContextProvider = ({
       return [];
     }
 
-    console.log(`[BlendContext:validateJoins] Validating joins, ignoring first query: ${firstQueryUuid}`);
+    //console.log(`[BlendContext:validateJoins] Validating joins, ignoring first query: ${firstQueryUuid}`);
 
     // Filter through all join configurations stored in the 'joins' state object
     const invalid_join_entries = Object.values(joins).filter((j_entry) => {
@@ -473,7 +473,7 @@ export const BlendContextProvider = ({
     });
 
     // Return the array of IQueryJoin entries (excluding the first query) that contain errors
-    console.log(`[BlendContext:validateJoins] Found ${invalid_join_entries.length} invalid join entries (excluding first query).`);
+    //console.log(`[BlendContext:validateJoins] Found ${invalid_join_entries.length} invalid join entries (excluding first query).`);
     return invalid_join_entries;
 
   // Now depends on 'queries' to identify the first one, 'joins' to check, and 'validateJoin' helper
