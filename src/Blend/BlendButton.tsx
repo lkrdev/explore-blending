@@ -1,4 +1,4 @@
-import { Box, Icon, IconButton, Space, Tooltip } from "@looker/components";
+import { Box, Icon, Checkbox, Label, IconButton, Space, Tooltip } from "@looker/components";
 import { Code, Error } from "@styled-icons/material";
 import React from "react";
 import { useBoolean } from "usehooks-ts";
@@ -8,7 +8,7 @@ import { useExtensionContext } from "../Main";
 import { useBlendContext } from "./Context";
 import { SeeSqlDialog } from "./SeeSqlDialog";
 
-interface BlendButtonProps {}
+interface BlendButtonProps { }
 
 const getJoinTypeSql = (join_type: TJoinType) => {
   const joins = {
@@ -75,8 +75,15 @@ const getFieldSelectList = (queries: IQuery[], dialect: string) => {
     .join(", ");
 };
 
-export const BlendButton: React.FC<BlendButtonProps> = ({}) => {
-  const { queries, joins, validateJoins, first_query_connection } =
+export const BlendButton: React.FC<BlendButtonProps> = ({ }) => {
+  const {
+    queries,
+    joins,
+    validateJoins,
+    first_query_connection,
+    stripLimits,
+    setStripLimits,
+  } =
     useBlendContext();
   const openDialog = useBoolean(false);
   const can_blend = queries.length > 1;
@@ -84,44 +91,133 @@ export const BlendButton: React.FC<BlendButtonProps> = ({}) => {
   const sdk = useExtensionContext().core40SDK;
   const extension = useExtensionContext().extensionSDK;
   const { search_params } = useSearchParams();
+
+  const safeQueryForWith = (sql: string): string => {
+    // 1. Trim whitespace from the beginning and end
+    let trimmedSql = sql.trim();
+
+    // 2. Remove a potential trailing semicolon.
+    // A semicolon inside the parentheses defining a CTE is usually a syntax error.
+    if (trimmedSql.endsWith(';')) {
+      trimmedSql = trimmedSql.slice(0, -1).trimEnd(); // Remove semicolon and any space before it
+    }
+
+    // 3. Wrap the entire potentially complex query in parentheses.
+    // This makes it a valid subquery/derived table expression suitable
+    // for use as a CTE definition body.
+    return `(${trimmedSql})`;
+  };
+
+
   const getQuerySql = async (dialect: string, b_query_param: string) => {
+
+    // Step 1: Fetch SQL from Looker SDK for each query
     const promises = queries.map((q) => {
+      // Fetch the SQL as defined in Looker, without adding a limit override
       return sdk.ok(
         sdk.run_query({
           query_id: q.query_id,
           result_format: "sql",
-          limit: 90210,
         })
       );
     });
-    const query_sql = (await Promise.all(promises)).reduce(
-      (acc, p, i) => ({
-        ...acc,
-        [queries[i].uuid]: p
-          .replace("FETCH NEXT 90210 ROWS ONLY", "")
-          .replace("LIMIT 90210", "")
-          .trim(),
-      }),
+
+    // Wait for all SQL results
+    const query_sql_results = await Promise.all(promises);
+
+    // Step 2: Process each raw SQL string
+    // --- START: Replace this .reduce() block with the Debugging Version ---
+    const query_sql = query_sql_results.reduce(
+      (acc, rawSqlResult, i) => {
+        const queryId = queries[i].query_id; // Get query ID for logging
+        console.log(`--- Processing Query Index: ${i}, ID: ${queryId} ---`);
+        console.log("Step 0: Raw SQL Result:\n", rawSqlResult);
+
+        // Start processing
+        let processedSql = rawSqlResult.trim();
+        console.log("Step 0a: After initial trim:\n", processedSql);
+
+
+        // Step 1: Remove Metadata Query Block
+        const sqlBeforeMetaRemoval = processedSql;
+        processedSql = processedSql.replace(/-- sql for creating the total[\s\S]*$/i, '').trim();
+        if (sqlBeforeMetaRemoval !== processedSql) {
+          console.log("Step 1: After Metadata Removal:\n", processedSql);
+        } else {
+          console.log("Step 1: Metadata Removal - No change detected.");
+        }
+
+        // Step 2: Remove Trailing ORDER BY Clause
+        const sqlBeforeOrderByRemoval = processedSql;
+        // Matches ORDER BY followed by typical column/number/direction lists, until the end. Less greedy.
+        processedSql = processedSql.replace(/\sORDER\s+BY\s+[a-zA-Z0-9_.,\s()'"\-\`\[\]]+(?: ASC| DESC)?\s*$/i, '').trim();
+        if (sqlBeforeOrderByRemoval !== processedSql) {
+          console.log("Step 2: After ORDER BY Removal:\n", processedSql);
+        } else {
+          console.log("Step 2: ORDER BY Removal - No change detected.");
+        }
+
+        // Step 3: Conditional Limit Removal
+        console.log(`Step 3: Checking stripLimits: ${stripLimits}`);
+        if (stripLimits) {
+          const sqlBeforeLimitRemoval = processedSql;
+          processedSql = processedSql.replace(/LIMIT\s+\d+\s*$/i, "").trim();
+          processedSql = processedSql.replace(
+            /FETCH\s+(NEXT|FIRST)\s+\d+\s+ROWS?\s+ONLY\s*$/i,
+            ""
+          ).trim();
+          if (sqlBeforeLimitRemoval !== processedSql) {
+            console.log("Step 3a: After Conditional Limit Removal:\n", processedSql);
+          } else {
+            console.log("Step 3a: Conditional Limit Removal - No change detected.");
+          }
+        } else {
+          console.log("Step 3a: Conditional Limit Removal - Skipped (stripLimits is false).");
+        }
+
+        // Final Checks & Assignment
+        processedSql = processedSql.trim();
+        if (!processedSql) {
+          console.warn(`Query ${queryId} (Index: ${i}) resulted in empty SQL after processing. Raw SQL was:\n${rawSqlResult}`);
+          processedSql = '-- Error: Processed SQL was empty';
+        }
+        console.log("Step 4: Final Processed SQL for Accumulator:\n", processedSql);
+        console.log(`--- Finished Processing Query Index: ${i} ---`);
+
+
+        return {
+          ...acc,
+          [queries[i].uuid]: processedSql, // Assign the processed SQL
+        };
+      },
       {} as { [key: string]: string }
     );
+
+    // Step 3: Construct the final blended SQL query (Structure remains the same)
     const new_sql = `
 ${b_query_param?.length ? `-- b=${b_query_param}` : ""}
 WITH ${`${queries
-      .map(
-        (q, i) => `${q.uuid} AS (
-    ${query_sql[q.uuid as keyof typeof query_sql]}
-    )${i < queries.length - 1 ? ", " : ""}`
-      )
-      .join("\n")}`}
-SELECT ${getFieldSelectList(queries, dialect)} FROM ${[queries[0].uuid]}
-    ${queries
-      .map((q) => {
-        const j = joins[q.uuid as keyof typeof joins];
-        if (j) {
-          return getJoinSql(j, dialect);
-        }
-      })
-      .join("\n")}`;
+        .map(
+          (q, i) =>
+            // safeQueryForWith wraps the CLEANED SQL in parentheses
+            `${q.uuid} AS ${safeQueryForWith(
+              query_sql[q.uuid as keyof typeof query_sql]
+            )}${i < queries.length - 1 ? "," : ""}`
+        )
+        .join("\n")}`}
+SELECT ${getFieldSelectList(queries, dialect)} FROM ${queries[0].uuid}
+${queries
+        .slice(1)
+        .map((q) => {
+          const j = joins[q.uuid as keyof typeof joins];
+          if (j) {
+            return getJoinSql(j, dialect);
+          }
+          return null;
+        })
+        .filter(Boolean)
+        .join("\n")}`;
+
     return new_sql;
   };
 
@@ -162,23 +258,45 @@ SELECT ${getFieldSelectList(queries, dialect)} FROM ${[queries[0].uuid]}
       : "";
   const disabled = !can_blend || loading.value || invalid_joins.length > 0;
   return (
-    <Box display="flex" dir="row" width="100%" justifyContent="space-between">
-      <Space width="100%" gap="small">
+    // Outer Box - This will now stack the Checkbox row and the Button/Icon row vertically
+
+    <Box>
+      {/* --- ROW 1: Checkbox + Label --- */}
+      {/* This is the structure that fixed the checkbox alignment */}
+      <Box display="flex" alignItems="center" mb="xsmall">
+        <Checkbox
+          checked={stripLimits}
+          onChange={() => setStripLimits(!stripLimits)}
+          disabled={loading.value}
+          id="stripLimitsCheckbox"
+        />
+        <Label htmlFor="stripLimitsCheckbox">
+          Unlimited Rows
+        </Label>
+      </Box>
+      {/* --- End ROW 1 --- */}
+
+      {/* --- ROW 2: Button + Icons (Aligned together) --- */}
+      {/* Use Space with align="center" to manage this row */}
+      <Space align="center" gap="small"> {/* Align items in THIS row vertically centered */}
+
         <LoadingButton
-          flexGrow={true}
           is_loading={loading.value}
           onClick={handleBlend}
           disabled={disabled}
         >
           Blend
         </LoadingButton>
+
+        {/* Icons - should now align with the Button in this row */}
         <IconButton
           size="medium"
           onClick={openDialog.setTrue}
           disabled={!can_blend || loading.value || invalid_joins.length > 0}
-          icon={<Code size={24} color="black" />}
+          icon={<Code size={24} />}
           tooltip="SQL"
         />
+
         <Tooltip content={invalid_joins_text}>
           <Icon
             size="medium"
@@ -188,12 +306,17 @@ SELECT ${getFieldSelectList(queries, dialect)} FROM ${[queries[0].uuid]}
             }}
           />
         </Tooltip>
+
       </Space>
+      {/* --- End ROW 2 --- */}
+
+      {/* Dialog remains outside this main layout structure */}
       {openDialog.value && (
         <SeeSqlDialog
           onClose={openDialog.setFalse}
           handleBlend={handleBlend}
           getQuerySql={async () => {
+            // ... your async function ...
             if (!first_query_connection) {
               console.error("No connection found");
               return Promise.resolve("");
@@ -206,6 +329,8 @@ SELECT ${getFieldSelectList(queries, dialect)} FROM ${[queries[0].uuid]}
           }}
         />
       )}
-    </Box>
+
+    </Box> // End Outer vertical Box
   );
 };
+

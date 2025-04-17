@@ -63,14 +63,31 @@ export const AppContextProvider = ({
   const getExploreFields = async (explore_id: string) => {
     if (explore_id) {
       let new_fields: { [key: string]: IExploreField } = {};
-      const explore = await sdk.ok(
+      /* const explore = await sdk.ok(
         sdk.lookml_model_explore({
           lookml_model_name: explore_id.split("::")[0],
           explore_name: explore_id.split("::")[1],
           fields:
             "connection_name,fields(dimensions(name,label,category),measures(name,label,category))",
         })
-      );
+      ); */
+
+      // adding try/catch around both sdk.lookml_model_explore calls to prevent
+      // the full-screen crash caused by 404s or missing explores.
+      let explore;
+      try {
+        explore = await sdk.ok(
+          sdk.lookml_model_explore({
+            lookml_model_name: explore_id.split("::")[0],
+            explore_name: explore_id.split("::")[1],
+            fields:
+              "connection_name,fields(dimensions(name,label,category),measures(name,label,category))",
+          })
+        );
+      } catch (error) {
+        console.warn("Failed to fetch explore fields for:", explore_id, error);
+        return {};
+      }
 
       ["dimensions", "measures"].forEach((type) => {
         const fields: ILookmlModelExploreField[] = get(
@@ -109,14 +126,24 @@ export const AppContextProvider = ({
       const promises = models.reduce((acc, model) => {
         const first_explore = model.explores?.[0];
         if (first_explore && model.name && first_explore.name) {
+          // adding try/catch around both sdk.lookml_model_explore calls to prevent
+          // the full-screen crash caused by 404s or missing explores.
           acc.push(
-            sdk.ok(
-              sdk.lookml_model_explore({
-                lookml_model_name: model.name,
-                explore_name: first_explore.name,
-                fields: "connection_name",
+            sdk
+              .ok(
+                sdk.lookml_model_explore({
+                  lookml_model_name: model.name,
+                  explore_name: first_explore.name,
+                  fields: "connection_name",
+                })
+              )
+              .catch((err) => {
+                console.warn(
+                  `Failed to fetch explore for model: ${model.name}, explore: ${first_explore.name}`,
+                  err
+                );
+                return {} as ILookmlModelExplore;
               })
-            )
           );
         } else {
           acc.push(Promise.resolve({} as ILookmlModelExplore));

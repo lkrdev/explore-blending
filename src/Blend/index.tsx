@@ -117,6 +117,7 @@ const BlendBase: React.FC = () => {
           console.error(`Explore ${explore_id} not found`);
           return acc;
         } else {
+          console.log({ q });
           acc.push({
             uuid: uniqueId("q_"),
             query_id: q.client_id!,
