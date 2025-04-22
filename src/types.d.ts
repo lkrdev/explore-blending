@@ -32,7 +32,10 @@ interface IExploreField {
   explore_id: string;
   id: string;
   label: string;
+  label_short: string;
+  view_label: string;
   type: "dimension" | "measure";
+  lookml_type: string;
 }
 
 type TJoinType = "inner" | "left" | "right" | "full" | "cross";
@@ -55,10 +58,11 @@ interface ITranslatedJoinItem {
 
 interface IBlendField {
   name: string;
-  alias: string;
+  sql_alias: string;
   label_short: string;
   view_label: string;
   group_label?: string;
   description?: string;
   type: string;
+  query_uuid: string;
 }

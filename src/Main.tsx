@@ -16,9 +16,9 @@ import { ComponentsProvider } from "@looker/components";
 import { ExtensionContext } from "@looker/extension-sdk-react";
 import React, { useContext, useEffect, useState } from "react";
 import { Redirect, Route, Switch } from "react-router-dom";
-import ConfigForm from "../blend_api";
 import Blend from "./Blend";
 import Blended from "./Blended";
+import ConfigForm from "./Config";
 /**
 
  * A simple component that uses the Looker SDK through the extension sdk to display a customized hello message.

@@ -65,25 +65,18 @@ export const AppContextProvider = ({
   const getExploreFields = async (explore_id: string) => {
     if (explore_id) {
       let new_fields: { [key: string]: IExploreField } = {};
-      /* const explore = await sdk.ok(
-        sdk.lookml_model_explore({
-          lookml_model_name: explore_id.split("::")[0],
-          explore_name: explore_id.split("::")[1],
-          fields:
-            "connection_name,fields(dimensions(name,label,category),measures(name,label,category))",
-        })
-      ); */
 
       // adding try/catch around both sdk.lookml_model_explore calls to prevent
       // the full-screen crash caused by 404s or missing explores.
       let explore;
       try {
+        const required_fields =
+          "name,label,label_short,view_label,category,type";
         explore = await sdk.ok(
           sdk.lookml_model_explore({
             lookml_model_name: explore_id.split("::")[0],
             explore_name: explore_id.split("::")[1],
-            fields:
-              "connection_name,fields(dimensions(name,label,category),measures(name,label,category))",
+            fields: `connection_name,fields(dimensions(${required_fields}),measures(${required_fields}))`,
           })
         );
       } catch (error) {
@@ -102,8 +95,12 @@ export const AppContextProvider = ({
             explore_id,
             id: f.name || "",
             label: f.label || "",
+            label_short: f.label_short || "",
+            view_label: f.view_label || "",
             type: (f.category || "dimension") as "dimension" | "measure",
+            lookml_type: f.type || "",
           };
+          console.log(new_fields);
         });
       });
       setConnections((p) => ({

@@ -8,7 +8,7 @@ import {
   Tooltip,
 } from "@looker/components";
 import { Code, Error } from "@styled-icons/material";
-import React from "react";
+import React, { useState } from "react";
 import { useBoolean } from "usehooks-ts";
 import { useAppContext } from "../AppContext";
 import LoadingButton from "../components/ProgressButton";
@@ -101,6 +101,7 @@ export const BlendButton: React.FC<BlendButtonProps> = ({}) => {
   const { extensionSDK: extension, lookerHostData } = useExtensionContext();
   const { search_params } = useSearchParams();
   const { getExploreField } = useAppContext();
+  const [error, setError] = useState<string | undefined>();
 
   const safeQueryForWith = (sql: string): string => {
     // 1. Trim whitespace from the beginning and end
@@ -259,10 +260,15 @@ ${queries
         if (found) {
           fields.push({
             name: f.id,
-            alias: f.id,
-            label_short: found.label,
-            view_label: found.label,
-            type: found.type,
+            sql_alias: fieldTransform(
+              q.uuid,
+              f,
+              connection_meta.dialect_name || ""
+            ),
+            label_short: found.label_short,
+            view_label: q.explore.label + " - " + found.view_label,
+            type: found.lookml_type,
+            query_uuid: q.uuid,
           });
         }
       });
@@ -270,38 +276,54 @@ ${queries
     const explore_ids = queries.map((q) => q.explore.id);
     const payload = {
       uuid: "test",
-      url: window.location.href,
+      url: lookerHostData?.hostOrigin,
       fields: fields,
       sql: query_sql,
-      models: explore_ids.map((e) => e.split("::")[0]),
       explore_ids: explore_ids,
       project_name: config.projectName,
       user_attribute: config.userAttribute,
       repo_name: config.repoName,
       explore_label: config.exploreLabel,
+      includes: config.includes,
+      lookml_model:
+        config.connection_model_mapping?.[first_query_connection || ""]
+          .model_name || "",
     };
-    console.log({
-      hostOrigin: lookerHostData?.hostOrigin,
-      location: window.location.href,
-    });
-    const r = extension.serverProxy(API_URL, {
-      method: "POST",
-      body: JSON.stringify(payload),
-      headers: {
-        "Content-Type": "application/json",
-        "x-personal-access-token": extension.createSecretKeyTag(
-          "personal_access_token"
-        ),
-        "x-client-id": config.clientId || "",
-        "x-client-secret": extension.createSecretKeyTag("client_secret"),
-        "x-base-url": lookerHostData?.hostOrigin || "",
-        "x-webhook-secret": config.webhookSecret || "",
-      },
-    });
-    loading.setTrue();
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+      "x-personal-access-token": extension.createSecretKeyTag(
+        "personal_access_token"
+      ),
+      "x-base-url": lookerHostData?.hostOrigin || "",
+      "x-webhook-secret": extension.createSecretKeyTag("webhook_secret"),
+    };
+    if (config.accessGrants) {
+      headers["x-client-id"] = extension.createSecretKeyTag("client_id");
+      headers["x-client-secret"] =
+        extension.createSecretKeyTag("client_secret");
+    }
+    try {
+      const r = await extension.serverProxy(API_URL, {
+        method: "POST",
+        body: JSON.stringify(payload),
+        headers: headers,
+      });
+      if (r.status === 200) {
+        console.log(r.body);
+        extension.openBrowserWindow(r.body.explore_url, "_blank");
+      } else {
+        // @ts-ignore
+        setError(r.status_text);
+      }
+    } catch (e) {
+      setError(String(e));
+      console.error(e);
+    }
+    loading.setFalse();
   };
 
   const handleBlend = async () => {
+    setError(undefined);
     await extension.refreshContextData();
     const config = await extension.getContextData();
     if (config.lookml) {
@@ -361,6 +383,7 @@ ${queries
 
       {/* --- ROW 2: Button + Icons (Aligned together) --- */}
       {/* Use Space with align="center" to manage this row */}
+      {error && <Label>{error}</Label>}
       <Space align="center" gap="small">
         {" "}
         {/* Align items in THIS row vertically centered */}

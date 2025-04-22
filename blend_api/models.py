@@ -138,10 +138,11 @@ class AccessGrant(BaseModel):
 
 
 class BlendField(BaseModel):
+    query_uuid: str
     name: str = Field(
         pattern=r"^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)?$"
     )  # Validates snake_case pattern with zero or one periods
-    alias: str = Field(pattern=r"^[a-z][a-z0-9_]*$")  # Validates snake_case pattern
+    sql_alias: str
     label_short: str
     view_label: str
     group_label: str = Field(default="")
@@ -149,13 +150,21 @@ class BlendField(BaseModel):
     type: TSharedFieldType
 
     @property
+    def alias(self) -> str:
+        return self.name.replace(".", "_")
+
+    @property
+    def dimension_name(self) -> str:
+        return self.query_uuid + "." + self.alias
+
+    @property
     def sql(self) -> str:
-        return "${TABLE}." + self.alias
+        return "${TABLE}." + '"' + self.sql_alias + '"'
 
     @property
     def lookml(self) -> str:
-        sql: str = "${TABLE}." + self.alias
-        out = f"""  dimension: {self.name} {{
+        sql: str = "${TABLE}." + self.sql_alias
+        out = f"""  dimension: {self.dimension_name} {{
     label: "{self.label_short}"
     view_label: "{self.view_label}"
     group_label: "{self.group_label}"
@@ -211,13 +220,19 @@ class RequestBody(BaseModel):
     url: str
     fields: List[BlendField]
     sql: str
-    models: Set[str]
     explore_ids: Set[str]
     project_name: str
     user_attribute: str
     includes: str | None = None
     explore_label: str | None = None
     repo_name: str | None = None
+    lookml_model: str = Field(
+        pattern=r"^[a-z][a-z0-9_]*$"
+    )  # Validates snake_case pattern
+
+    @property
+    def models(self) -> Set[str]:
+        return set([explore.split("::")[0] for explore in self.explore_ids])
 
     @property
     def name(self) -> str:
@@ -255,6 +270,7 @@ view: {self.name} {{
         """
         explore = f"""
 explore: {self.name} {{
+  hidden: yes
   label: "{self.label_explore}" {("\n" + access_grant.explore_access_grant) if access_grant else ""}
 }}
 """
