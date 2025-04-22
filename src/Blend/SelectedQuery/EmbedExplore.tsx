@@ -41,6 +41,10 @@ const EmbedExplore: React.FC<{
   const getQueryMetadata = async (qid: string) => {
     if (qid?.length) {
       const metadata = await sdk?.ok(sdk?.query(qid));
+      // short circuit if no fields
+      if (!metadata.fields?.length) {
+        return;
+      }
       let newQuery: IQuery = {
         uuid,
         query_id: qid,

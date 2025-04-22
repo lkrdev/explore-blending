@@ -87,43 +87,47 @@ const setBlendData = (blend_data: IBlendData): string | undefined => {
     return undefined;
   }
 
-  // Translate join UUIDs to indices relative to the queries array
-  const translateJoinsToQueryIds: (ITranslatedJoin | undefined)[] = (
-    blend_data.queries || []
-  ).map((q, i) => {
-    // Check if joins exist and the current query UUID is a key
-    const found_join =
-      blend_data.joins && blend_data.joins[q.uuid]
-        ? blend_data.joins[q.uuid]
-        : undefined;
-    if (found_join && found_join.joins) {
-      // Ensure joins array exists
-      return {
-        type: found_join.type,
-        joins: found_join.joins.map((j) => {
-          // Find the index of the 'from' query
-          const from_query_index = (blend_data.queries || []).findIndex(
-            (query) => query.uuid === j.from_query_id
-          );
-          // Return the translated join condition
-          return {
-            from_query_index: from_query_index, // Use index (-1 if not found)
-            from_field: j.from_field,
-            to_field: j.to_field,
-          };
-        }),
-      } as ITranslatedJoin; // Assert type if needed
-    } else {
-      // Return undefined for queries without a corresponding join entry or empty joins array
-      return undefined;
+  const dataToEncode: {
+    queries: string[];
+    query_uuids: string[];
+    joins: ITranslatedJoin[];
+  } = blend_data.queries.reduce(
+    (acc, _v, k) => {
+      const query = blend_data.queries[k];
+      const found_query_join =
+        blend_data.joins && blend_data.joins[query.uuid]
+          ? blend_data.joins[query.uuid]
+          : undefined;
+      if (
+        found_query_join &&
+        found_query_join.joins?.length &&
+        query.fields?.length &&
+        query.query_id
+      ) {
+        acc.queries.push(query.query_id);
+        acc.query_uuids.push(query.uuid);
+        acc.joins.push({
+          type: found_query_join.type,
+          joins: found_query_join.joins.map((j) => {
+            const from_query_index = blend_data.queries.findIndex(
+              (q) => q.uuid === j.from_query_id
+            );
+            return {
+              from_query_index: from_query_index,
+              from_field: j.from_field,
+              to_field: j.to_field,
+            };
+          }),
+        });
+      }
+      return acc;
+    },
+    {
+      queries: [] as string[],
+      query_uuids: [] as string[],
+      joins: [] as ITranslatedJoin[],
     }
-  });
-
-  // Construct the final object to be encoded
-  const dataToEncode = {
-    queries: (blend_data.queries || []).map((q) => q.query_id || ""), // Map query IDs, default to empty string if missing
-    joins: translateJoinsToQueryIds, // Use the translated joins array
-  };
+  );
 
   try {
     // Encode the JSON string to Base64

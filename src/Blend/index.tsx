@@ -89,6 +89,7 @@ const BlendBase: React.FC = () => {
       const blend_data_json = JSON.parse(atob(blend_data)) as {
         queries: string[];
         joins: ITranslatedJoin[];
+        query_uuids: string[];
       };
 
       const query_promises = blend_data_json.queries.map(
@@ -108,7 +109,7 @@ const BlendBase: React.FC = () => {
         acc[explore_id] = explore_fields;
         return acc;
       }, {} as { [key: string]: { [key: string]: IExploreField } });
-      const queries = query_responses.reduce((acc, q) => {
+      const queries = query_responses.reduce((acc, q, k) => {
         const explore_id = `${q.model}::${q.view}`;
         const explore = explores[explore_id];
         const query_fields = (q.fields || []).map((f) => fields[explore_id][f]);
@@ -118,7 +119,7 @@ const BlendBase: React.FC = () => {
           return acc;
         } else {
           acc.push({
-            uuid: uniqueId("q_"),
+            uuid: blend_data_json.query_uuids[k] || uniqueId("q_"),
             query_id: q.client_id!,
             explore: {
               id: explore.id,

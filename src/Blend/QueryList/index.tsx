@@ -89,7 +89,6 @@ export const QueryList: React.FC = () => {
   // --- HandleDuplicate function ---
   const handleDuplicate = async (query: IQuery) => {
     const uuid = query.uuid;
-    console.log({ query });
     duplicating.setTrue();
     console.log(`[QueryList] Initiating duplicate for query: ${query.uuid}`);
 

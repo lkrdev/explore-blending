@@ -55,6 +55,7 @@ const JoinRow = ({
   };
   const from_value = [join.from_query_id, join.from_field].join("::");
   const is_valid = validateJoin(join);
+  console.log({ from_fields, from_value, to_fields, to_value: join.to_field });
   return (
     <Box
       flexGrow={1}
