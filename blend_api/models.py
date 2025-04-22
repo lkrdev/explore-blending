@@ -1,0 +1,263 @@
+from datetime import datetime, timezone
+from typing import List, Literal, Optional, Set, Union, get_args
+
+from pydantic import BaseModel, Field
+from structlog import get_logger
+
+logger = get_logger()
+
+TSharedFieldType = Literal[
+    "date",
+    "date_date",
+    "number",
+    "string",
+    "yesno",
+    "zipcode",
+    "date_day_of_month",
+    "date_day_of_week",
+    "date_day_of_week_index",
+    "date_day_of_year",
+    "date_fiscal_month_num",
+    "date_fiscal_quarter",
+    "date_fiscal_quarter_of_year",
+    "date_fiscal_year",
+    "date_hour",
+    "date_hour2",
+    "date_hour3",
+    "date_hour4",
+    "date_hour6",
+    "date_hour8",
+    "date_hour12",
+    "date_hour_of_day",
+    "date_microsecond",
+    "date_millisecond",
+    "date_millisecond2",
+    "date_millisecond4",
+    "date_millisecond5",
+    "date_millisecond8",
+    "date_millisecond10",
+    "date_millisecond20",
+    "date_millisecond25",
+    "date_millisecond40",
+    "date_millisecond50",
+    "date_millisecond100",
+    "date_millisecond125",
+    "date_millisecond200",
+    "date_millisecond250",
+    "date_millisecond500",
+    "date_minute",
+    "date_minute2",
+    "date_minute3",
+    "date_minute4",
+    "date_minute5",
+    "date_minute6",
+    "date_minute10",
+    "date_minute12",
+    "date_minute15",
+    "date_minute20",
+    "date_minute30",
+    "date_month",
+    "date_month_name",
+    "date_month_num",
+    "date_quarter",
+    "date_quarter_of_year",
+    "date_raw",
+    "date_second",
+    "date_time",
+    "date_time_of_day",
+    "date_week",
+    "date_week_of_year",
+    "date_year",
+]
+
+# Dimension-specific types
+TDimensionFieldType = Union[
+    Literal[
+        "bin",
+        "distance",
+        "location",
+        "tier",
+        "duration_day",
+        "duration_hour",
+        "duration_minute",
+        "duration_month",
+        "duration_quarter",
+        "duration_second",
+        "duration_week",
+        "duration_year",
+    ],
+    TSharedFieldType,
+]
+
+TMeasureOnlyFieldType = Literal[
+    "average",
+    "average_distinct",
+    "count",
+    "count_distinct",
+    "int",
+    "list",
+    "max",
+    "median",
+    "median_distinct",
+    "min",
+    "percent_of_previous",
+    "percent_of_total",
+    "percentile",
+    "percentile_distinct",
+    "running_total",
+    "sum",
+    "sum_distinct",
+]
+
+# Measure-specific types
+TMeasureFieldType = Union[
+    TMeasureOnlyFieldType,
+    TSharedFieldType,
+]
+
+
+class AccessGrant(BaseModel):
+    uuid: str
+    user_attribute: str
+    allowed_values: Set[str]
+
+    @property
+    def name(self) -> str:
+        return f"access_grant_{self.uuid}"
+
+    @property
+    def explore_access_grant(self) -> str:
+        return f"""  required_access_grants: [{self.name}]"""
+
+    @property
+    def access_grant(self) -> str:
+        return f"""access_grant: {self.name} {{
+  user_attribute: {self.user_attribute}
+  allowed_values: [{", ".join(self.allowed_values)}]
+}}"""
+
+
+class BlendField(BaseModel):
+    name: str = Field(
+        pattern=r"^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)?$"
+    )  # Validates snake_case pattern with zero or one periods
+    alias: str = Field(pattern=r"^[a-z][a-z0-9_]*$")  # Validates snake_case pattern
+    label_short: str
+    view_label: str
+    group_label: str = Field(default="")
+    description: str = Field(default="")
+    type: TSharedFieldType
+
+    @property
+    def sql(self) -> str:
+        return "${TABLE}." + self.alias
+
+    @property
+    def lookml(self) -> str:
+        sql: str = "${TABLE}." + self.alias
+        out = f"""  dimension: {self.name} {{
+    label: "{self.label_short}"
+    view_label: "{self.view_label}"
+    group_label: "{self.group_label}"
+    description: "{self.description}"
+    type: {self.dimension_type}
+    sql: {sql} ;;
+  }}
+        """
+        return out
+
+    @property
+    def dimension_type(self) -> TDimensionFieldType:
+        if self.type in get_args(TDimensionFieldType):
+            return self.type
+        elif self.type in get_args(TMeasureOnlyFieldType):
+            if self.type in [
+                "average",
+                "average_distinct",
+                "median",
+                "median_distinct",
+                "sum",
+                "sum_distinct",
+                "max",
+                "min",
+                "count",
+                "count_distinct",
+            ]:
+                return "number"
+            elif self.type in [
+                "percent_of_previous",
+                "percent_of_total",
+                "percentile",
+                "percentile_distinct",
+                "running_total",
+            ]:
+                logger.warning("Invalid measure only field type", type=self.type)
+                return "string"
+            else:
+                logger.warning("Invalid measure only field type", type=self.type)
+                return "string"
+        else:
+            logger.warning("Invalid field type", type=self.type)
+            return "string"
+
+    @property
+    def measure_type(self) -> TMeasureFieldType:
+        if self.type in TSharedFieldType:
+            return self.type
+
+
+class RequestBody(BaseModel):
+    uuid: str = Field(pattern=r"^[a-z][a-z0-9_]*$")  # Validates snake_case pattern
+    url: str
+    fields: List[BlendField]
+    sql: str
+    models: Set[str]
+    explore_ids: Set[str]
+    project_name: str
+    user_attribute: str
+    includes: str | None = None
+    explore_label: str | None = None
+    repo_name: str | None = None
+
+    @property
+    def name(self) -> str:
+        return f"blend_{self.uuid}"
+
+    @property
+    def label_explore(self) -> str:
+        if self.explore_label:
+            return self.explore_label
+        else:
+            return f"Blend {self.uuid}"
+
+    def get_lookml(self, access_grant: Optional[AccessGrant] = None) -> str:
+        out = f"# This file is automatically generated: {datetime.now(timezone.utc).isoformat()}\n"
+        out += f"# URL: {self.url}\n"
+        if self.includes:
+            out += f"""
+            include: "{self.includes}"
+            """
+
+        if access_grant:
+            out += f"""
+            access_grant: {access_grant.uuid} {{
+                user_attribute: {access_grant.user_attribute}
+                allowed_values: [{", ".join(access_grant.allowed_values)}]
+            }}
+        """
+        view = f"""
+view: {self.name} {{
+  derived_table: {{
+    sql: {self.sql} ;;
+  }}
+{"\n".join(field.lookml for field in self.fields)}
+}}
+        """
+        explore = f"""
+explore: {self.name} {{
+  label: "{self.label_explore}" {("\n" + access_grant.explore_access_grant) if access_grant else ""}
+}}
+"""
+        out += view
+        out += explore
+        return out

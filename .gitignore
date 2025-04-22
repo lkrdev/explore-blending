@@ -1,2 +1,7 @@
 node_modules
 dist
+blend_api.egg-info
+.DS_Store
+.pytest_cache
+.venv
+__pycache__
