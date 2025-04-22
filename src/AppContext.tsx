@@ -3,11 +3,11 @@ import {
   ILookmlModelExplore,
   ILookmlModelExploreField,
   IUser,
+  Looker40SDK,
 } from "@looker/sdk";
 import get from "lodash/get";
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { useExtensionContext } from "./Main";
-import { Looker40SDK } from '@looker/sdk'; // Import SDK type
 
 // Empty interface to start with - add your state types here
 interface IAppContext {
@@ -90,7 +90,6 @@ export const AppContextProvider = ({
         console.warn("Failed to fetch explore fields for:", explore_id, error);
         return {};
       }
-      
 
       ["dimensions", "measures"].forEach((type) => {
         const fields: ILookmlModelExploreField[] = get(
@@ -129,16 +128,6 @@ export const AppContextProvider = ({
       const promises = models.reduce((acc, model) => {
         const first_explore = model.explores?.[0];
         if (first_explore && model.name && first_explore.name) {
-          /* acc.push(
-            sdk.ok(
-              sdk.lookml_model_explore({
-                lookml_model_name: model.name,
-                explore_name: first_explore.name,
-                fields: "connection_name",
-              })
-            )
-          ); */
-
           // adding try/catch around both sdk.lookml_model_explore calls to prevent
           // the full-screen crash caused by 404s or missing explores.
           acc.push(
@@ -158,8 +147,6 @@ export const AppContextProvider = ({
                 return {} as ILookmlModelExplore;
               })
           );
-          
-
         } else {
           acc.push(Promise.resolve({} as ILookmlModelExplore));
         }
