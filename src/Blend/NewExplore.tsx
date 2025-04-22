@@ -19,13 +19,6 @@ const NewExplore: React.FC = () => {
     return models
       .reduce((acc, model) => {
         if (model?.explores?.length) {
-          console.log({
-            connections,
-            first_query_connection,
-            explore_id: `${model.name}::${model?.explores[0]?.name}`,
-            connection:
-              connections[`${model.name}::${model?.explores[0]?.name}`],
-          });
           const model_term = `${model.label} ${model.name}`.toLowerCase();
           const explores = model?.explores?.reduce((acc, explore) => {
             const explore_term =
