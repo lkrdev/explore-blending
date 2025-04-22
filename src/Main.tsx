@@ -16,6 +16,7 @@ import { ComponentsProvider } from "@looker/components";
 import { ExtensionContext } from "@looker/extension-sdk-react";
 import React, { useContext, useEffect, useState } from "react";
 import { Redirect, Route, Switch } from "react-router-dom";
+import ConfigForm from "../blend_api";
 import Blend from "./Blend";
 import Blended from "./Blended";
 /**
@@ -58,6 +59,9 @@ const Main: React.FC<{
         {/* @ts-ignore */}
         <Route path="/blended/:slug">
           <Blended />
+        </Route>
+        <Route path="/config">
+          <ConfigForm />
         </Route>
       </Switch>
     </ComponentsProvider>
