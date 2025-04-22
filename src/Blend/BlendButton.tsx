@@ -1,14 +1,24 @@
-import { Box, Icon, Checkbox, Label, IconButton, Space, Tooltip } from "@looker/components";
+import {
+  Box,
+  Checkbox,
+  Icon,
+  IconButton,
+  Label,
+  Space,
+  Tooltip,
+} from "@looker/components";
 import { Code, Error } from "@styled-icons/material";
-import React from "react";
+import React, { useState } from "react";
 import { useBoolean } from "usehooks-ts";
+import { useAppContext } from "../AppContext";
 import LoadingButton from "../components/ProgressButton";
+import { API_URL } from "../constants";
 import { useSearchParams } from "../hooks/useSearchParams";
 import { useExtensionContext } from "../Main";
 import { useBlendContext } from "./Context";
 import { SeeSqlDialog } from "./SeeSqlDialog";
 
-interface BlendButtonProps { }
+interface BlendButtonProps {}
 
 const getJoinTypeSql = (join_type: TJoinType) => {
   const joins = {
@@ -75,7 +85,7 @@ const getFieldSelectList = (queries: IQuery[], dialect: string) => {
     .join(", ");
 };
 
-export const BlendButton: React.FC<BlendButtonProps> = ({ }) => {
+export const BlendButton: React.FC<BlendButtonProps> = ({}) => {
   const {
     queries,
     joins,
@@ -83,14 +93,15 @@ export const BlendButton: React.FC<BlendButtonProps> = ({ }) => {
     first_query_connection,
     stripLimits,
     setStripLimits,
-  } =
-    useBlendContext();
+  } = useBlendContext();
   const openDialog = useBoolean(false);
   const can_blend = queries.length > 1;
   const loading = useBoolean(false);
   const sdk = useExtensionContext().core40SDK;
-  const extension = useExtensionContext().extensionSDK;
+  const { extensionSDK: extension, lookerHostData } = useExtensionContext();
   const { search_params } = useSearchParams();
+  const { getExploreField } = useAppContext();
+  const [error, setError] = useState<string | undefined>();
 
   const safeQueryForWith = (sql: string): string => {
     // 1. Trim whitespace from the beginning and end
@@ -98,7 +109,7 @@ export const BlendButton: React.FC<BlendButtonProps> = ({ }) => {
 
     // 2. Remove a potential trailing semicolon.
     // A semicolon inside the parentheses defining a CTE is usually a syntax error.
-    if (trimmedSql.endsWith(';')) {
+    if (trimmedSql.endsWith(";")) {
       trimmedSql = trimmedSql.slice(0, -1).trimEnd(); // Remove semicolon and any space before it
     }
 
@@ -108,9 +119,7 @@ export const BlendButton: React.FC<BlendButtonProps> = ({ }) => {
     return `(${trimmedSql})`;
   };
 
-
   const getQuerySql = async (dialect: string, b_query_param: string) => {
-
     // Step 1: Fetch SQL from Looker SDK for each query
     const promises = queries.map((q) => {
       // Fetch the SQL as defined in Looker, without adding a limit override
@@ -127,101 +136,199 @@ export const BlendButton: React.FC<BlendButtonProps> = ({ }) => {
 
     // Step 2: Process each raw SQL string
     // --- START: Replace this .reduce() block with the Debugging Version ---
-    const query_sql = query_sql_results.reduce(
-      (acc, rawSqlResult, i) => {
-        const queryId = queries[i].query_id; // Get query ID for logging
-        console.log(`--- Processing Query Index: ${i}, ID: ${queryId} ---`);
-        console.log("Step 0: Raw SQL Result:\n", rawSqlResult);
+    const query_sql = query_sql_results.reduce((acc, rawSqlResult, i) => {
+      const queryId = queries[i].query_id; // Get query ID for logging
+      console.log(`--- Processing Query Index: ${i}, ID: ${queryId} ---`);
+      console.log("Step 0: Raw SQL Result:\n", rawSqlResult);
 
-        // Start processing
-        let processedSql = rawSqlResult.trim();
-        console.log("Step 0a: After initial trim:\n", processedSql);
+      // Start processing
+      let processedSql = rawSqlResult.trim();
+      console.log("Step 0a: After initial trim:\n", processedSql);
 
+      // Step 1: Remove Metadata Query Block
+      const sqlBeforeMetaRemoval = processedSql;
+      processedSql = processedSql
+        .replace(/-- sql for creating the total[\s\S]*$/i, "")
+        .trim();
+      if (sqlBeforeMetaRemoval !== processedSql) {
+        console.log("Step 1: After Metadata Removal:\n", processedSql);
+      } else {
+        console.log("Step 1: Metadata Removal - No change detected.");
+      }
 
-        // Step 1: Remove Metadata Query Block
-        const sqlBeforeMetaRemoval = processedSql;
-        processedSql = processedSql.replace(/-- sql for creating the total[\s\S]*$/i, '').trim();
-        if (sqlBeforeMetaRemoval !== processedSql) {
-          console.log("Step 1: After Metadata Removal:\n", processedSql);
+      // Step 2: Remove Trailing ORDER BY Clause
+      const sqlBeforeOrderByRemoval = processedSql;
+      // Matches ORDER BY followed by typical column/number/direction lists, until the end. Less greedy.
+      processedSql = processedSql
+        .replace(
+          /\sORDER\s+BY\s+[a-zA-Z0-9_.,\s()'"\-\`\[\]]+(?: ASC| DESC)?\s*$/i,
+          ""
+        )
+        .trim();
+      if (sqlBeforeOrderByRemoval !== processedSql) {
+        console.log("Step 2: After ORDER BY Removal:\n", processedSql);
+      } else {
+        console.log("Step 2: ORDER BY Removal - No change detected.");
+      }
+
+      // Step 3: Conditional Limit Removal
+      console.log(`Step 3: Checking stripLimits: ${stripLimits}`);
+      if (stripLimits) {
+        const sqlBeforeLimitRemoval = processedSql;
+        processedSql = processedSql.replace(/LIMIT\s+\d+\s*$/i, "").trim();
+        processedSql = processedSql
+          .replace(/FETCH\s+(NEXT|FIRST)\s+\d+\s+ROWS?\s+ONLY\s*$/i, "")
+          .trim();
+        if (sqlBeforeLimitRemoval !== processedSql) {
+          console.log(
+            "Step 3a: After Conditional Limit Removal:\n",
+            processedSql
+          );
         } else {
-          console.log("Step 1: Metadata Removal - No change detected.");
+          console.log(
+            "Step 3a: Conditional Limit Removal - No change detected."
+          );
         }
+      } else {
+        console.log(
+          "Step 3a: Conditional Limit Removal - Skipped (stripLimits is false)."
+        );
+      }
 
-        // Step 2: Remove Trailing ORDER BY Clause
-        const sqlBeforeOrderByRemoval = processedSql;
-        // Matches ORDER BY followed by typical column/number/direction lists, until the end. Less greedy.
-        processedSql = processedSql.replace(/\sORDER\s+BY\s+[a-zA-Z0-9_.,\s()'"\-\`\[\]]+(?: ASC| DESC)?\s*$/i, '').trim();
-        if (sqlBeforeOrderByRemoval !== processedSql) {
-          console.log("Step 2: After ORDER BY Removal:\n", processedSql);
-        } else {
-          console.log("Step 2: ORDER BY Removal - No change detected.");
-        }
+      // Final Checks & Assignment
+      processedSql = processedSql.trim();
+      if (!processedSql) {
+        console.warn(
+          `Query ${queryId} (Index: ${i}) resulted in empty SQL after processing. Raw SQL was:\n${rawSqlResult}`
+        );
+        processedSql = "-- Error: Processed SQL was empty";
+      }
+      console.log(
+        "Step 4: Final Processed SQL for Accumulator:\n",
+        processedSql
+      );
+      console.log(`--- Finished Processing Query Index: ${i} ---`);
 
-        // Step 3: Conditional Limit Removal
-        console.log(`Step 3: Checking stripLimits: ${stripLimits}`);
-        if (stripLimits) {
-          const sqlBeforeLimitRemoval = processedSql;
-          processedSql = processedSql.replace(/LIMIT\s+\d+\s*$/i, "").trim();
-          processedSql = processedSql.replace(
-            /FETCH\s+(NEXT|FIRST)\s+\d+\s+ROWS?\s+ONLY\s*$/i,
-            ""
-          ).trim();
-          if (sqlBeforeLimitRemoval !== processedSql) {
-            console.log("Step 3a: After Conditional Limit Removal:\n", processedSql);
-          } else {
-            console.log("Step 3a: Conditional Limit Removal - No change detected.");
-          }
-        } else {
-          console.log("Step 3a: Conditional Limit Removal - Skipped (stripLimits is false).");
-        }
-
-        // Final Checks & Assignment
-        processedSql = processedSql.trim();
-        if (!processedSql) {
-          console.warn(`Query ${queryId} (Index: ${i}) resulted in empty SQL after processing. Raw SQL was:\n${rawSqlResult}`);
-          processedSql = '-- Error: Processed SQL was empty';
-        }
-        console.log("Step 4: Final Processed SQL for Accumulator:\n", processedSql);
-        console.log(`--- Finished Processing Query Index: ${i} ---`);
-
-
-        return {
-          ...acc,
-          [queries[i].uuid]: processedSql, // Assign the processed SQL
-        };
-      },
-      {} as { [key: string]: string }
-    );
+      return {
+        ...acc,
+        [queries[i].uuid]: processedSql, // Assign the processed SQL
+      };
+    }, {} as { [key: string]: string });
 
     // Step 3: Construct the final blended SQL query (Structure remains the same)
     const new_sql = `
 ${b_query_param?.length ? `-- b=${b_query_param}` : ""}
 WITH ${`${queries
-        .map(
-          (q, i) =>
-            // safeQueryForWith wraps the CLEANED SQL in parentheses
-            `${q.uuid} AS ${safeQueryForWith(
-              query_sql[q.uuid as keyof typeof query_sql]
-            )}${i < queries.length - 1 ? "," : ""}`
-        )
-        .join("\n")}`}
+      .map(
+        (q, i) =>
+          // safeQueryForWith wraps the CLEANED SQL in parentheses
+          `${q.uuid} AS ${safeQueryForWith(
+            query_sql[q.uuid as keyof typeof query_sql]
+          )}${i < queries.length - 1 ? "," : ""}`
+      )
+      .join("\n")}`}
 SELECT ${getFieldSelectList(queries, dialect)} FROM ${queries[0].uuid}
 ${queries
-        .slice(1)
-        .map((q) => {
-          const j = joins[q.uuid as keyof typeof joins];
-          if (j) {
-            return getJoinSql(j, dialect);
-          }
-          return null;
-        })
-        .filter(Boolean)
-        .join("\n")}`;
+  .slice(1)
+  .map((q) => {
+    const j = joins[q.uuid as keyof typeof joins];
+    if (j) {
+      return getJoinSql(j, dialect);
+    }
+    return null;
+  })
+  .filter(Boolean)
+  .join("\n")}`;
 
     return new_sql;
   };
 
+  const handleLookMLBlend = async () => {
+    const connection_meta = await sdk.ok(
+      sdk.connection(first_query_connection!)
+    );
+    const config = await extension.getContextData();
+    const query_sql = await getQuerySql(
+      connection_meta.dialect_name || "",
+      search_params.get("b") || ""
+    );
+
+    const fields: IBlendField[] = [];
+    queries.forEach((q) => {
+      q.fields.forEach((f) => {
+        const found = getExploreField(q.explore.id, f.id);
+        if (found) {
+          fields.push({
+            name: f.id,
+            sql_alias: fieldTransform(
+              q.uuid,
+              f,
+              connection_meta.dialect_name || ""
+            ),
+            label_short: found.label_short,
+            view_label: q.explore.label + " - " + found.view_label,
+            type: found.lookml_type,
+            query_uuid: q.uuid,
+          });
+        }
+      });
+    });
+    const explore_ids = queries.map((q) => q.explore.id);
+    const payload = {
+      uuid: "test",
+      url: lookerHostData?.hostOrigin,
+      fields: fields,
+      sql: query_sql,
+      explore_ids: explore_ids,
+      project_name: config.projectName,
+      user_attribute: config.userAttribute,
+      repo_name: config.repoName,
+      explore_label: config.exploreLabel,
+      includes: config.includes,
+      lookml_model:
+        config.connection_model_mapping?.[first_query_connection || ""]
+          .model_name || "",
+    };
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+      "x-personal-access-token": extension.createSecretKeyTag(
+        "personal_access_token"
+      ),
+      "x-base-url": lookerHostData?.hostOrigin || "",
+      "x-webhook-secret": extension.createSecretKeyTag("webhook_secret"),
+    };
+    if (config.accessGrants) {
+      headers["x-client-id"] = extension.createSecretKeyTag("client_id");
+      headers["x-client-secret"] =
+        extension.createSecretKeyTag("client_secret");
+    }
+    try {
+      const r = await extension.serverProxy(API_URL, {
+        method: "POST",
+        body: JSON.stringify(payload),
+        headers: headers,
+      });
+      if (r.status === 200) {
+        console.log(r.body);
+        extension.openBrowserWindow(r.body.explore_url, "_blank");
+      } else {
+        // @ts-ignore
+        setError(r.status_text);
+      }
+    } catch (e) {
+      setError(String(e));
+      console.error(e);
+    }
+    loading.setFalse();
+  };
+
   const handleBlend = async () => {
+    setError(undefined);
+    await extension.refreshContextData();
+    const config = await extension.getContextData();
+    if (config.lookml) {
+      return handleLookMLBlend();
+    }
     loading.setTrue();
     if (!first_query_connection) {
       console.error("No connection found");
@@ -270,16 +377,16 @@ ${queries
           disabled={loading.value}
           id="stripLimitsCheckbox"
         />
-        <Label htmlFor="stripLimitsCheckbox">
-          Unlimited Rows
-        </Label>
+        <Label htmlFor="stripLimitsCheckbox">Unlimited Rows</Label>
       </Box>
       {/* --- End ROW 1 --- */}
 
       {/* --- ROW 2: Button + Icons (Aligned together) --- */}
       {/* Use Space with align="center" to manage this row */}
-      <Space align="center" gap="small"> {/* Align items in THIS row vertically centered */}
-
+      {error && <Label>{error}</Label>}
+      <Space align="center" gap="small">
+        {" "}
+        {/* Align items in THIS row vertically centered */}
         <LoadingButton
           is_loading={loading.value}
           onClick={handleBlend}
@@ -287,7 +394,6 @@ ${queries
         >
           Blend
         </LoadingButton>
-
         {/* Icons - should now align with the Button in this row */}
         <IconButton
           size="medium"
@@ -296,7 +402,6 @@ ${queries
           icon={<Code size={24} />}
           tooltip="SQL"
         />
-
         <Tooltip content={invalid_joins_text}>
           <Icon
             size="medium"
@@ -306,7 +411,6 @@ ${queries
             }}
           />
         </Tooltip>
-
       </Space>
       {/* --- End ROW 2 --- */}
 
@@ -329,8 +433,6 @@ ${queries
           }}
         />
       )}
-
     </Box> // End Outer vertical Box
   );
 };
-

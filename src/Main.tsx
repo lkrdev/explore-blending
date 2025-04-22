@@ -18,6 +18,7 @@ import React, { useContext, useEffect, useState } from "react";
 import { Redirect, Route, Switch } from "react-router-dom";
 import Blend from "./Blend";
 import Blended from "./Blended";
+import ConfigForm from "./Config";
 /**
 
  * A simple component that uses the Looker SDK through the extension sdk to display a customized hello message.
@@ -58,6 +59,9 @@ const Main: React.FC<{
         {/* @ts-ignore */}
         <Route path="/blended/:slug">
           <Blended />
+        </Route>
+        <Route path="/config">
+          <ConfigForm />
         </Route>
       </Switch>
     </ComponentsProvider>

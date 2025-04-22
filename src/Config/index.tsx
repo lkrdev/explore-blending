@@ -1,0 +1,173 @@
+import {
+  Box,
+  Button,
+  FieldCheckbox,
+  FieldText,
+  Form,
+  Label,
+  SpaceVertical,
+  Text,
+} from "@looker/components";
+import { IDBConnection } from "@looker/sdk";
+import { orderBy } from "lodash";
+import React, { useEffect, useState } from "react";
+import styled from "styled-components";
+import { useCore40SDK, useExtensionContext } from "../Main";
+
+const StyledSpaceVertical = styled(SpaceVertical)`
+  border-left: 1px solid ${({ theme }) => theme.colors.key};
+`;
+
+interface ConfigFormData {
+  projectName: string;
+  userAttribute: string;
+  repoName: string;
+  lookml?: boolean;
+  accessGrants?: boolean;
+  includes?: string;
+  connection_model_mapping?: {
+    [key: string]: { connection_name: string; model_name: string };
+  };
+}
+
+const ConfigForm: React.FC = () => {
+  const [connections, setConnections] = useState<IDBConnection[]>([]);
+  const extension = useExtensionContext();
+  const sdk = useCore40SDK();
+  const [formData, setFormData] = useState<
+    Partial<ConfigFormData> | undefined
+  >();
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value, checked } = e.target;
+    setFormData((prev) => {
+      const new_value = {
+        [name]: typeof checked === "boolean" ? checked : value,
+      } as Partial<ConfigFormData>;
+      if (!prev) {
+        return new_value;
+      } else {
+        return {
+          ...prev,
+          ...new_value,
+        };
+      }
+    });
+  };
+
+  useEffect(() => {
+    const getContext = async () => {
+      await extension.extensionSDK.refreshContextData();
+      const contextData = await extension.extensionSDK.getContextData();
+
+      setFormData(contextData);
+      const connections = await sdk.ok(sdk.all_connections());
+      setConnections(orderBy(connections, "name"));
+    };
+    getContext();
+  }, []);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    await extension.extensionSDK.saveContextData(formData);
+    await extension.extensionSDK.refreshContextData();
+  };
+  if (!formData) {
+    return <Box p="large">Loading...</Box>;
+  } else {
+    return (
+      <Box p="large" maxWidth="400px">
+        <Form onSubmit={handleSubmit}>
+          <SpaceVertical gap="small">
+            <FieldCheckbox
+              name="lookml"
+              label="Use LookML"
+              checked={formData.lookml || false}
+              onChange={handleChange}
+            />
+            <FieldText
+              name="projectName"
+              label="Blend Project Name"
+              required
+              value={formData.projectName || ""}
+              onChange={handleChange}
+              disabled={!formData.lookml}
+            />
+            <Label>Connection Model Mapping</Label>
+            <StyledSpaceVertical gap="small" pl="small">
+              {connections.map((connection) => {
+                const found =
+                  formData.connection_model_mapping?.[connection.name || ""];
+                return (
+                  <FieldText
+                    key={connection.name}
+                    label={connection.name}
+                    required
+                    value={found?.model_name || ""}
+                    onChange={(e) => {
+                      const new_value = e.target.value;
+                      setFormData({
+                        ...formData,
+                        // @ts-ignore
+                        connection_model_mapping: {
+                          ...formData.connection_model_mapping,
+                          [connection.name || ""]: {
+                            connection_name: connection.name || "",
+                            model_name: new_value,
+                          },
+                        },
+                      });
+                    }}
+                    disabled={!formData.lookml}
+                  />
+                );
+              })}
+            </StyledSpaceVertical>
+            <FieldText
+              name="includes"
+              label="Includes to put in the LookML file"
+              value={formData.includes || ""}
+              onChange={handleChange}
+            />
+            <FieldCheckbox
+              name="accessGrants"
+              label="Use Access Grants"
+              checked={formData.accessGrants || false}
+              onChange={handleChange}
+              disabled={!formData.lookml}
+            />
+            <FieldText
+              prefix={"extenion"}
+              name="userAttribute"
+              label="Access Grant User Attribute"
+              required
+              value={formData.userAttribute || ""}
+              onChange={handleChange}
+              disabled={!(formData.lookml && formData.accessGrants)}
+            />
+            <Text>
+              Required User Attributes:
+              <pre style={{ fontSize: "10px", whiteSpace: "pre-wrap" }}>
+                {extension.extensionSDK.createSecretKeyTag("webhook_secret")}
+                {extension.extensionSDK.createSecretKeyTag(
+                  "personal_access_token"
+                )}
+                {formData.accessGrants && (
+                  <>
+                    {extension.extensionSDK.createSecretKeyTag("client_id")}
+                    {extension.extensionSDK.createSecretKeyTag("client_secret")}
+                  </>
+                )}
+              </pre>
+            </Text>
+            <Button type="submit">Save Configuration</Button>
+          </SpaceVertical>
+        </Form>
+        <SpaceVertical gap="small"></SpaceVertical>
+      </Box>
+    );
+  }
+};
+
+export default ConfigForm;
