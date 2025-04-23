@@ -19,21 +19,12 @@ def hello_world(request: Request):
     personal_access_token = (
         request.headers.get("X-Personal-Access-Token") or PERSONAL_ACCESS_TOKEN
     )
-    logger.info(
-        "Personal access token",
-        personal_access_token=personal_access_token,
-        ptoken=PERSONAL_ACCESS_TOKEN,
-    )
     if not personal_access_token:
         return "Missing or invalid personal access token", 400
 
     sdk_client_id = request.headers.get("X-Client-Id")
     sdk_client_secret = request.headers.get("X-Client-Secret")
     sdk_base_url = request.headers.get("X-Base-Url")
-    logger.info(
-        "SDK base url",
-        sdk_base_url=sdk_base_url,
-    )
     if not sdk_base_url:
         return "Missing or invalid sdk base url", 400
     webhook_secret = request.headers.get("X-Webhook-Secret")

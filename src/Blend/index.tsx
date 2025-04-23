@@ -71,11 +71,15 @@ const BlendBase: React.FC = () => {
   const explores = useMemo(() => {
     return models.reduce((acc, model) => {
       model.explores?.forEach((explore) => {
-        const explore_id = `${model.name}::${explore.name}`;
-        acc[explore_id] = {
-          id: explore_id,
-          label: explore.label!,
-        };
+        if (explore.hidden) {
+          return;
+        } else {
+          const explore_id = `${model.name}::${explore.name}`;
+          acc[explore_id] = {
+            id: explore_id,
+            label: explore.label!,
+          };
+        }
       });
       return acc;
     }, {} as { [key: string]: { id: string; label: string } });

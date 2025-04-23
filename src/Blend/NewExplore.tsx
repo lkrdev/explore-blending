@@ -21,26 +21,30 @@ const NewExplore: React.FC = () => {
         if (model?.explores?.length) {
           const model_term = `${model.label} ${model.name}`.toLowerCase();
           const explores = model?.explores?.reduce((acc, explore) => {
-            const explore_term =
-              `${explore.label} ${explore.name}`.toLowerCase();
-            if (
-              first_query_connection !==
-              connections[`${model.name}::${explore.name}`]
-            ) {
-              // if its not part of the first connection, don't add it
+            if (explore.hidden) {
               return acc;
-            }
-
-            if (!debouncedSearch?.length) {
-              return [...acc, explore];
             } else {
+              const explore_term =
+                `${explore.label} ${explore.name}`.toLowerCase();
               if (
-                explore_term.includes(debouncedSearch) ||
-                model_term.includes(debouncedSearch)
+                first_query_connection !==
+                connections[`${model.name}::${explore.name}`]
               ) {
+                // if its not part of the first connection, don't add it
+                return acc;
+              }
+
+              if (!debouncedSearch?.length) {
                 return [...acc, explore];
               } else {
-                return acc;
+                if (
+                  explore_term.includes(debouncedSearch) ||
+                  model_term.includes(debouncedSearch)
+                ) {
+                  return [...acc, explore];
+                } else {
+                  return acc;
+                }
               }
             }
           }, [] as ILookmlModelNavExplore[]);
@@ -65,7 +69,11 @@ const NewExplore: React.FC = () => {
   const handleSelectOption = async (option?: SelectOptionObject) => {
     if (option) {
       //activate blending button IF query length is above 0, could I rather keep it hidden or deactivated?
-      await newQuery(option.value, option.label || "", queries.length > 0);
+      await newQuery({
+        explore_id: option.value,
+        explore_label: option.label || "",
+        create_join: queries.length > 0,
+      });
       //await newQuery(option.value, option.label || "", false); // <-- Forced blending to false
     }
   };

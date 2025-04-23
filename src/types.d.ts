@@ -82,3 +82,11 @@ interface IBlendPayload {
   lookml_model: string;
   connection_name: string;
 }
+
+interface INewQuery {
+  explore_id: string;
+  explore_label: string;
+  create_join?: boolean;
+  initialFields?: IQuery["fields"];
+  query_id?: string;
+}

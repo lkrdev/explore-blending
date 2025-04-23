@@ -106,13 +106,13 @@ export const QueryList: React.FC = () => {
         );
 
         // --- Step 2: Call newQuery ONCE, passing initial fields ---
-        const newlyAddedQuery = await newQuery(
-          duplicateInfo.exploreId,
-          duplicateInfo.label,
-          false, // create_join = false
-          fieldsToCopy, // Pass the fields to copy
-          query.query_id // Pass the query_id
-        );
+        const newlyAddedQuery = await newQuery({
+          explore_id: duplicateInfo.exploreId,
+          explore_label: duplicateInfo.label,
+          create_join: false, // create_join = false
+          initialFields: fieldsToCopy, // Pass the fields to copy
+          query_id: query.query_id, // Pass the query_id
+        });
 
         if (newlyAddedQuery && newlyAddedQuery.uuid) {
           console.log(
