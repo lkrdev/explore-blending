@@ -147,7 +147,7 @@ class BlendField(BaseModel):
     view_label: str
     group_label: str = Field(default="")
     description: str = Field(default="")
-    type: TSharedFieldType
+    type: TDimensionFieldType | TMeasureFieldType
 
     @property
     def alias(self) -> str:
@@ -225,7 +225,8 @@ class RequestBody(BaseModel):
     user_attribute: str
     includes: str | None = None
     explore_label: str | None = None
-    repo_name: str | None = None
+    repo_name: str
+    connection_name: str
     lookml_model: str = Field(
         pattern=r"^[a-z][a-z0-9_]*$"
     )  # Validates snake_case pattern

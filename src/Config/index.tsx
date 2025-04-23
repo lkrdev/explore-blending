@@ -149,14 +149,24 @@ const ConfigForm: React.FC = () => {
             <Text>
               Required User Attributes:
               <pre style={{ fontSize: "10px", whiteSpace: "pre-wrap" }}>
-                {extension.extensionSDK.createSecretKeyTag("webhook_secret")}
-                {extension.extensionSDK.createSecretKeyTag(
-                  "personal_access_token"
-                )}
+                {extension.extensionSDK
+                  .createSecretKeyTag("webhook_secret")
+                  .replace(/[{}]/g, "")}
+                {"\n"}
+                {extension.extensionSDK
+                  .createSecretKeyTag("personal_access_token")
+                  .replace(/[{}]/g, "")}
+                {"\n"}
                 {formData.accessGrants && (
                   <>
-                    {extension.extensionSDK.createSecretKeyTag("client_id")}
-                    {extension.extensionSDK.createSecretKeyTag("client_secret")}
+                    {extension.extensionSDK
+                      .createSecretKeyTag("client_id")
+                      .replace(/[{}]/g, "")}
+                    {"\n"}
+                    {extension.extensionSDK
+                      .createSecretKeyTag("client_secret")
+                      .replace(/[{}]/g, "")}
+                    {"\n"}
                   </>
                 )}
               </pre>

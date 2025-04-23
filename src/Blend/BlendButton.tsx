@@ -12,13 +12,21 @@ import React, { useState } from "react";
 import { useBoolean } from "usehooks-ts";
 import { useAppContext } from "../AppContext";
 import LoadingButton from "../components/ProgressButton";
-import { API_URL } from "../constants";
+import { API_URL, ARTIFACT_NAMESPACE } from "../constants";
 import { useSearchParams } from "../hooks/useSearchParams";
 import { useExtensionContext } from "../Main";
 import { useBlendContext } from "./Context";
 import { SeeSqlDialog } from "./SeeSqlDialog";
 
 interface BlendButtonProps {}
+
+const getExploreLabel = (q: IQuery, f: IExploreField) => {
+  if (q.explore.new_label) {
+    return q.explore.new_label;
+  } else {
+    return q.explore.label + " - " + q.uuid;
+  }
+};
 
 const getJoinTypeSql = (join_type: TJoinType) => {
   const joins = {
@@ -266,7 +274,7 @@ ${queries
               connection_meta.dialect_name || ""
             ),
             label_short: found.label_short,
-            view_label: q.explore.label + " - " + found.view_label,
+            view_label: getExploreLabel(q, found),
             type: found.lookml_type,
             query_uuid: q.uuid,
           });
@@ -274,8 +282,11 @@ ${queries
       });
     });
     const explore_ids = queries.map((q) => q.explore.id);
-    const payload = {
-      uuid: "test",
+    const uuid = Array.from(crypto.getRandomValues(new Uint8Array(13)))
+      .map((n) => String.fromCharCode(97 + (n % 26)))
+      .join("");
+    const payload: IBlendPayload = {
+      uuid,
       url: lookerHostData?.hostOrigin,
       fields: fields,
       sql: query_sql,
@@ -288,6 +299,7 @@ ${queries
       lookml_model:
         config.connection_model_mapping?.[first_query_connection || ""]
           .model_name || "",
+      connection_name: connection_meta.name || "",
     };
     const headers: Record<string, string> = {
       "Content-Type": "application/json",
@@ -309,8 +321,21 @@ ${queries
         headers: headers,
       });
       if (r.status === 200) {
-        console.log(r.body);
+        const _artifact = await sdk.ok(
+          sdk.update_artifacts(ARTIFACT_NAMESPACE, [
+            {
+              key: uuid,
+              value: JSON.stringify({
+                queries,
+                joins,
+                payload,
+              }),
+              content_type: "application/json",
+            },
+          ])
+        );
         extension.openBrowserWindow(r.body.explore_url, "_blank");
+        extension.updateLocation;
       } else {
         // @ts-ignore
         setError(r.status_text);

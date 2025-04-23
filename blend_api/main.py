@@ -16,8 +16,6 @@ logger = get_logger()
 
 @functions_framework.http
 def hello_world(request: Request):
-    print(request.headers)
-    print(request.json)
     personal_access_token = (
         request.headers.get("X-Personal-Access-Token") or PERSONAL_ACCESS_TOKEN
     )
@@ -41,7 +39,7 @@ def hello_world(request: Request):
     webhook_secret = request.headers.get("X-Webhook-Secret")
 
     body = RequestBody.model_validate(request.json)
-    print(body.model_dump_json())
+
     access_grants: AccessGrant | None = None
     if sdk_client_id and sdk_client_secret and sdk_base_url:
         access_grants = get_access_grant(
@@ -54,18 +52,15 @@ def hello_world(request: Request):
         )
 
     lookml = body.get_lookml(access_grants)
-    print(lookml)
+
     github_commit_and_deploy(
         lookml=lookml,
-        uuid=body.uuid,
-        repo_name=body.repo_name,
+        sdk_base_url=sdk_base_url,
+        **body.model_dump(),
         personal_access_token=personal_access_token,
         webhook_secret=webhook_secret,
-        project_name=body.project_name,
-        sdk_base_url=sdk_base_url,
-        lookml_model=body.lookml_model,
     )
-    explore_url = f"{sdk_base_url}/explore/{body.lookml_model}/{body.name}"
+    explore_url = f"/explore/{body.lookml_model}/{body.name}"
 
     return dict(success=True, explore_url=explore_url)
 
@@ -83,4 +78,3 @@ if __name__ == "__main__":
         user_attribute="test",
         allowed_values={"test"},
     )
-    print(body.get_lookml(access_grant))

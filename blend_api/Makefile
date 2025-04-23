@@ -18,3 +18,6 @@ deploy:
 		--entry-point=hello_world \
 		--trigger-http \
 		--allow-unauthenticated
+
+cdn:
+	gcloud storage cp dist/bundle.js gs://$(bucket_name)/apps/explore-blending/$(version)/bundle.js
