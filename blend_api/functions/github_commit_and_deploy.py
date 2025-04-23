@@ -15,16 +15,16 @@ def github_commit_and_deploy(
     project_name: str,
     sdk_base_url: str,
     lookml_model: str,
+    connection_name: str,
+    **kwargs,
 ):
     if not repo_name:
         raise ValueError("repo_name is required")
     auth = Auth.Token(personal_access_token)
     g = Github(auth=auth)
-    filename = f"blends/{uuid}.explore.lkml"
+    filename = f"blends/{lookml_model}/{uuid}.explore.lkml"
 
     # Get repository
-    print(repo_name)
-    print(personal_access_token)
     repo = g.get_repo(repo_name)
     try:
         repo.get_contents("blends")
@@ -37,6 +37,15 @@ def github_commit_and_deploy(
         logger.info("Creating model directory")
         repo.create_file(
             f"blends/{lookml_model}/.gitkeep", "Create model directory", ""
+        )
+    try:
+        repo.get_contents(f"blends/{lookml_model}/{lookml_model}.model.lkml")
+    except Exception:
+        logger.info("Creating model file")
+        repo.create_file(
+            f"blends/{lookml_model}/{lookml_model}.model.lkml",
+            "Create model file",
+            f'connection: "{connection_name}"\ninclude: "*.explore.lkml"',
         )
     try:
         # Try to get existing file contents

@@ -9,6 +9,7 @@ interface IQuery {
   explore: {
     id: string;
     label: string;
+    new_label?: string;
   };
   fields: {
     id: string;
@@ -65,4 +66,19 @@ interface IBlendField {
   description?: string;
   type: string;
   query_uuid: string;
+}
+
+interface IBlendPayload {
+  uuid: string;
+  url: string | undefined;
+  fields: IBlendField[];
+  sql: string;
+  explore_ids: string[];
+  project_name: string;
+  user_attribute: string;
+  repo_name: string;
+  explore_label: string;
+  includes: string;
+  lookml_model: string;
+  connection_name: string;
 }
