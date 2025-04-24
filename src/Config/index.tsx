@@ -18,18 +18,6 @@ const StyledSpaceVertical = styled(SpaceVertical)`
   border-left: 1px solid ${({ theme }) => theme.colors.key};
 `;
 
-interface ConfigFormData {
-  projectName: string;
-  userAttribute: string;
-  repoName: string;
-  lookml?: boolean;
-  accessGrants?: boolean;
-  includes?: string;
-  connection_model_mapping?: {
-    [key: string]: { connection_name: string; model_name: string };
-  };
-}
-
 const ConfigForm: React.FC = () => {
   const [connections, setConnections] = useState<IDBConnection[]>([]);
   const extension = useExtensionContext();
@@ -185,6 +173,12 @@ const ConfigForm: React.FC = () => {
                 )}
               </pre>
             </Text>
+            <FieldText
+              name="override_api"
+              label="Override API"
+              value={formData.override_api || ""}
+              onChange={handleChange}
+            />
             <Button type="submit">Save Configuration</Button>
           </SpaceVertical>
         </Form>
