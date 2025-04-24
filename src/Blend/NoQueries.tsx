@@ -24,18 +24,22 @@ const NoQueries = () => {
         if (model?.explores?.length) {
           const model_term = `${model.label} ${model.name}`.toLowerCase();
           const explores = model?.explores?.reduce((acc, explore) => {
-            const explore_term =
-              `${explore.label} ${explore.name}`.toLowerCase();
-            if (!debouncedSearch?.length) {
-              return [...acc, explore];
+            if (explore.hidden) {
+              return acc;
             } else {
-              if (
-                explore_term.includes(debouncedSearch) ||
-                model_term.includes(debouncedSearch)
-              ) {
+              const explore_term =
+                `${explore.label} ${explore.name}`.toLowerCase();
+              if (!debouncedSearch?.length) {
                 return [...acc, explore];
               } else {
-                return acc;
+                if (
+                  explore_term.includes(debouncedSearch) ||
+                  model_term.includes(debouncedSearch)
+                ) {
+                  return [...acc, explore];
+                } else {
+                  return acc;
+                }
               }
             }
           }, [] as ILookmlModelNavExplore[]);
@@ -59,7 +63,10 @@ const NoQueries = () => {
 
   const handleSelectOption = async (option?: SelectOptionObject) => {
     if (option) {
-      await newQuery(option.value, option.label || "");
+      await newQuery({
+        explore_id: option.value,
+        explore_label: option.label || "",
+      });
     }
   };
 

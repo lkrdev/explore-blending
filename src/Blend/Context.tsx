@@ -32,12 +32,7 @@ interface IBlendContext {
     type: TJoinType
   ) => void;
   // *** newQuery now returns the created query object or null ***
-  newQuery: (
-    explore_id: string,
-    explore_label: string,
-    create_join?: boolean,
-    initialFields?: IQuery["fields"] // <-- ADD OPTIONAL PARAMETER
-  ) => Promise<IQuery | null>;
+  newQuery: (newQuery: INewQuery) => Promise<IQuery | null>;
   deleteQuery: (uuid: string) => void;
   updateQuery: (query: IQuery) => void;
   // *** duplicateQuery returns info needed to call newQuery ***
@@ -313,14 +308,18 @@ export const BlendContextProvider = ({
 
   // --- Replace the existing newQuery function in BlendContext.tsx with this ---
   const newQuery = useCallback(
-    async (
-      explore_id: string,
-      explore_label: string,
-      create_join: boolean = false,
-      initialFields?: IQuery["fields"], // <-- Add parameter
-      query_id?: string
-    ): Promise<IQuery | null> => {
-      const uuid = uniqueId("q");
+    async ({
+      explore_id,
+      explore_label,
+      create_join = false,
+      initialFields,
+      query_id,
+    }: INewQuery): Promise<IQuery | null> => {
+      let uuid = uniqueId("q");
+      while (queries.find((q) => q.uuid === uuid)) {
+        uuid = uniqueId("q");
+      }
+
       const fieldsToUse = initialFields || []; // Use initialFields if provided, else empty array
       console.log(
         `[BlendContext:newQuery] Creating new query (UUID: ${uuid}) for explore: ${explore_id}. Initial field count: ${fieldsToUse.length}`

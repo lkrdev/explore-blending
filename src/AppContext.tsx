@@ -100,7 +100,6 @@ export const AppContextProvider = ({
             type: (f.category || "dimension") as "dimension" | "measure",
             lookml_type: f.type || "",
           };
-          console.log(new_fields);
         });
       });
       setConnections((p) => ({

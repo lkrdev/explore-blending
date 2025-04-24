@@ -43,6 +43,7 @@ const EmbedExplore: React.FC<{
   const embedCtrRef = useCallback((el) => {
     if (el && hostUrl) {
       startLoading?.();
+      console.log({ hostUrl, explore_id });
       LookerEmbedSDK.init(hostUrl);
       LookerEmbedSDK.createExploreWithId(explore_id)
         .appendTo(el)

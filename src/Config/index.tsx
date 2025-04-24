@@ -38,11 +38,17 @@ const ConfigForm: React.FC = () => {
     Partial<ConfigFormData> | undefined
   >();
 
+  const handleCheckChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, checked } = e.target;
+    setFormData((prev) => {
+      return { ...prev, [name]: checked };
+    });
+  };
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value, checked } = e.target;
+    const { name, value } = e.target;
     setFormData((prev) => {
       const new_value = {
-        [name]: typeof checked === "boolean" ? checked : value,
+        [name]: value,
       } as Partial<ConfigFormData>;
       if (!prev) {
         return new_value;
@@ -60,7 +66,7 @@ const ConfigForm: React.FC = () => {
       await extension.extensionSDK.refreshContextData();
       const contextData = await extension.extensionSDK.getContextData();
 
-      setFormData(contextData);
+      setFormData(contextData || {});
       const connections = await sdk.ok(sdk.all_connections());
       setConnections(orderBy(connections, "name"));
     };
@@ -84,7 +90,15 @@ const ConfigForm: React.FC = () => {
               name="lookml"
               label="Use LookML"
               checked={formData.lookml || false}
+              onChange={handleCheckChange}
+            />
+            <FieldText
+              name="repoName"
+              label="Repository Name for Blends"
+              required
+              value={formData.repoName || ""}
               onChange={handleChange}
+              disabled={!formData.lookml}
             />
             <FieldText
               name="projectName"
@@ -134,7 +148,7 @@ const ConfigForm: React.FC = () => {
               name="accessGrants"
               label="Use Access Grants"
               checked={formData.accessGrants || false}
-              onChange={handleChange}
+              onChange={handleCheckChange}
               disabled={!formData.lookml}
             />
             <FieldText

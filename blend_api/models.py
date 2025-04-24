@@ -222,7 +222,7 @@ class RequestBody(BaseModel):
     sql: str
     explore_ids: Set[str]
     project_name: str
-    user_attribute: str
+    user_attribute: str | None = None
     includes: str | None = None
     explore_label: str | None = None
     repo_name: str

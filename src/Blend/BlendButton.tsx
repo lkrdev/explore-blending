@@ -349,12 +349,12 @@ ${queries
 
   const handleBlend = async () => {
     setError(undefined);
+    loading.setTrue();
     await extension.refreshContextData();
     const config = await extension.getContextData();
     if (config.lookml) {
       return handleLookMLBlend();
     }
-    loading.setTrue();
     if (!first_query_connection) {
       console.error("No connection found");
       return;
