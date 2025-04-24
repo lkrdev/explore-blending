@@ -90,3 +90,22 @@ interface INewQuery {
   initialFields?: IQuery["fields"];
   query_id?: string;
 }
+
+interface ConfigData {
+  projectName?: string;
+  userAttribute?: string;
+  repoName?: string;
+  lookml?: boolean;
+  accessGrants?: boolean;
+  includes?: string;
+  connection_model_mapping?: {
+    [key: string]: { connection_name: string; model_name: string };
+  };
+  override_api?: string;
+}
+
+interface ConfigFormData extends ConfigData {
+  projectName: string;
+  userAttribute: string;
+  repoName: string;
+}

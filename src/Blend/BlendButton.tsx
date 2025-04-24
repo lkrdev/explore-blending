@@ -315,7 +315,10 @@ ${queries
         extension.createSecretKeyTag("client_secret");
     }
     try {
-      const r = await extension.serverProxy(API_URL, {
+      const api_url = config.override_api?.length
+        ? config.override_api
+        : API_URL;
+      const r = await extension.serverProxy(api_url, {
         method: "POST",
         body: JSON.stringify(payload),
         headers: headers,
