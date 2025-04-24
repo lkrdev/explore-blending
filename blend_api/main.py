@@ -31,9 +31,9 @@ def hello_world(request: Request):
 
     body = RequestBody.model_validate(request.json)
 
-    access_grants: AccessGrant | None = None
+    access_grant: AccessGrant | None = None
     if sdk_client_id and sdk_client_secret and sdk_base_url:
-        access_grants = get_access_grant(
+        ag_response = get_access_grant(
             sdk_client_id=sdk_client_id,
             sdk_client_secret=sdk_client_secret,
             sdk_base_url=sdk_base_url,
@@ -41,8 +41,11 @@ def hello_world(request: Request):
             models=body.models,
             uuid=body.uuid,
         )
+        if not ag_response["success"]:
+            return dict(success=False, error=ag_response["error"]), 400
+        access_grant = ag_response["access_grant"]
 
-    lookml = body.get_lookml(access_grants)
+    lookml = body.get_lookml(access_grant)
 
     github_commit_and_deploy(
         lookml=lookml,
