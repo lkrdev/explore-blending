@@ -15,7 +15,7 @@ logger = get_logger()
 
 
 @functions_framework.http
-def hello_world(request: Request):
+def main(request: Request):
     personal_access_token = (
         request.headers.get("X-Personal-Access-Token") or PERSONAL_ACCESS_TOKEN
     )
@@ -57,18 +57,3 @@ def hello_world(request: Request):
     explore_url = f"/explore/{body.lookml_model}/{body.name}"
 
     return dict(success=True, explore_url=explore_url)
-
-
-if __name__ == "__main__":
-    from models import AccessGrant
-
-    body = RequestBody(
-        uuid="test",
-        url="test",
-        fields=[],
-    )
-    access_grant = AccessGrant(
-        uuid="test",
-        user_attribute="test",
-        allowed_values={"test"},
-    )

@@ -1,0 +1,40 @@
+name: Release Docker Image
+
+on:
+  release:
+    types: [created]
+
+env:
+  PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+  REGION: us-central1
+  REPOSITORY: explore-blend-api
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: "read"
+      id-token: "write"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Build and push Docker image
+        run: |
+          # Get the release tag
+          TAG=${{ github.event.release.tag_name }}
+
+          # Build and push the image with both the release tag and latest
+          gcloud builds submit explore_blend_api \
+            --tag $REGION-docker.pkg.dev/$PROJECT_ID/$REPOSITORY/explore-blend-api:$TAG \
+            --tag $REGION-docker.pkg.dev/$PROJECT_ID/$REPOSITORY/explore-blend-api:latest
