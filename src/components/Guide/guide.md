@@ -1,9 +1,11 @@
 # Explore Blend (alpha)
-This is an early version of a Looker extension that allows explore users to blend explores together, choose join paths, and perform custom calculations (custom dimensions, custom measures and table calculations) on top of the result. It's an advanced version of merge results that lets an end user do joins on the full explore queries. 
+This is an early version of a Looker extension that allows explore users to blend explores together, choose join paths, and perform custom calculations (custom dimensions, custom measures and table calculations) on top of the result. It's an alternative version of merge results that lets an end user do joins on the full explore queries. 
 
-> **Important:** 
+There are two modes, one that will use Looker's SQL runner to perform the blending and one that will use the LookML to perform the blending. To turn on the LookML mode, navigate to `/config` of the extension to set the properties.
+
+> **Note:** 
 >
-> *use_sql_runner* permission
+> *use_sql_runner* permission is required if you have not enabled the lookml writer
 >
 > There are two important caveats to this Looker extension. 
 > 1. The user using the extension needs to have `use_sql_runner` to perform the blending tasks. 
@@ -23,7 +25,6 @@ This is an early version of a Looker extension that allows explore users to blen
 ## TODOs
 
 ### Critical Bugs
-- Fix join deletion bug: When adding two joins and deleting the first join, an error occurs
 - Implement validation in `JoinRow` to prevent duplicate `to_field` usage
 
 ### Join Management
@@ -34,21 +35,14 @@ This is an early version of a Looker extension that allows explore users to blen
     2. (Simple) Use sidepanel order as join order (don't let a user select fields from later joins)
 - Extend join support beyond BigQuery/Postgres (Snowflake next? Will any changes need to be made?)
 
-### Query Management
-- Filter explore list to show only explores from the current connection
-- Implement query duplication functionality
-- Add query deletion capability, makes sure it also removes the joins
-- Handle large query display with proper scrolling behavior
-
 ### URL/State Management
 - Restore blend from saved SQL using -- b=sql_query_id
+- Restore blend from explore
 
 ### UI Improvements
 - Enhance dashboard functionality:
   - Improve dashboard picker interface
   - Add dashboard title saving capability
-- Add loading indicators to interactive buttons
-- Handle scroll behavior for large selected queries
 
 TODO:
 /config field validation for things like snake_case for model names and user attribute

@@ -7,7 +7,7 @@ freeze:
 	uv pip freeze > requirements.txt
 
 ff:
-	uv run functions-framework --target=hello_world --port=9576
+	uv run functions-framework --target=main --port=9576
 
 deploy:
 	gcloud functions deploy blend-api \
@@ -15,7 +15,7 @@ deploy:
 		--runtime=python312 \
 		--region=us-central1 \
 		--source=. \
-		--entry-point=hello_world \
+		--entry-point=main \
 		--trigger-http \
 		--allow-unauthenticated
 
