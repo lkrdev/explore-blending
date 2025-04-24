@@ -323,6 +323,7 @@ ${queries
         body: JSON.stringify(payload),
         headers: headers,
       });
+
       if (r.status === 200) {
         const _artifact = await sdk.ok(
           sdk.update_artifacts(ARTIFACT_NAMESPACE, [

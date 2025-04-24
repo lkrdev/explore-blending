@@ -57,6 +57,18 @@ def get_sdk(
         )
 
 
+class ModelName(str):
+    pass
+
+
+class RoleId(str):
+    pass
+
+
+class GroupId(str):
+    pass
+
+
 def get_access_grant(
     *,
     sdk_client_id: str,
@@ -70,34 +82,63 @@ def get_access_grant(
         logger.error("No models provided", sdk_base_url=sdk_base_url)
         raise ValueError("No models provided")
     sdk = get_sdk(sdk_client_id, sdk_client_secret, sdk_base_url)
-    roles = sdk.all_roles()
-    role_ids_for_models = [
-        role.id
-        for role in roles
-        if any(model in role.model_set.models for model in models)
-    ]
-    group_role_mapping: Dict[str, Set[str]] = dict()
+    model_groups: Dict[ModelName, Set[GroupId]] = {k: set() for k in models}
+    model_roles: Dict[ModelName, Set[RoleId]] = {k: set() for k in models}
     all_groups: List[Group] = []
-    for role_id in role_ids_for_models:
-        role_groups = sdk.role_groups(role_id)
-        all_groups.extend(role_groups)
-        group_role_mapping[role_id] = set([group.id for group in role_groups])
 
-    intersection_groups = set.intersection(*group_role_mapping.values())
-    if len(intersection_groups) == 0:
+    # Get all roles
+    # filter only roles that have models from the method argument
+    # for each filtered role, get the groups
+    # compare the groups from each model
+    # return the intersection of groups
+
+    roles = sdk.all_roles()
+    for role in roles:
+        for model_name in models:
+            if model_name in role.model_set.models:
+                model_roles[model_name].add(role.id)
+
+    for model_name in models:
+        model_role_set = model_roles[model_name]
+        for role_id in model_role_set:
+            role_groups = sdk.role_groups(role_id)
+            all_groups.extend(role_groups)
+            model_groups[model_name].update([group.id for group in role_groups])
+
+    group_intersection = set()
+    for i, model_name in enumerate(models):
+        if i == 0:
+            group_intersection = model_groups[model_name]
+        else:
+            group_intersection = group_intersection.intersection(
+                model_groups[model_name]
+            )
+
+    filtered_groups = set(
+        [group.name for group in all_groups if group.id in group_intersection]
+    )
+    if len(filtered_groups) == 0:
         logger.error(
             "No intersection groups found",
             models=list(models),
-            group_role_mapping=group_role_mapping,
+            all_groups=all_groups,
+            group_intersection=group_intersection,
+            roles=roles,
+            model_groups=model_groups,
+            model_roles=model_roles,
             sdk_base_url=sdk_base_url,
         )
-    else:
-        group_names = set(
-            [group.name for group in all_groups if group.id in intersection_groups]
+        return dict(
+            access_grant=None,
+            success=False,
+            error="No intersection groups found",
         )
-
-    return AccessGrant(
-        uuid=uuid,
-        user_attribute=user_attribute,
-        allowed_values=list(group_names),
-    )
+    else:
+        return dict(
+            access_grant=AccessGrant(
+                uuid=uuid,
+                user_attribute=user_attribute,
+                allowed_values=list(filtered_groups),
+            ),
+            success=True,
+        )
