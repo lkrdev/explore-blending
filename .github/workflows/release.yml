@@ -34,7 +34,7 @@ jobs:
       - name: Build and push Docker image
         run: |
           # Build and push the image with both the release tag and latest
-          gcloud builds submit explore_blend_api \
+          gcloud builds submit blend_api \
             --project ${{ env.PROJECT_ID }} \
             --tag ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/explore-blend-api:${{ env.TAG }} \
             --tag ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/explore-blend-api:latest

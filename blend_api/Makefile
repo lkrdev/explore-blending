@@ -6,7 +6,7 @@ test:
 freeze:
 	uv pip freeze > requirements.txt
 
-ff:
+dev:
 	uv run functions-framework --target=main --port=9576
 
 deploy:
@@ -18,6 +18,3 @@ deploy:
 		--entry-point=main \
 		--trigger-http \
 		--allow-unauthenticated
-
-cdn:
-	gcloud storage cp dist/bundle.js gs://$(bucket_name)/apps/explore-blending/$(version)/bundle.js
