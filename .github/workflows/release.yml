@@ -7,10 +7,11 @@ on:
 env:
   PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
   REGION: us-central1
-  REPOSITORY: explore-blend-api
+  SERVICE_NAME: explore-blend-api
   APP_NAME: explore-blending
   BUCKET_NAME: ${{ secrets.GCP_BUCKET_NAME }}
   TAG: ${{ github.event.release.tag_name }}
+  IMAGE_NAME: ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.SERVICE_NAME }}/explore-blend-api
 
 jobs:
   build-and-push:
@@ -36,8 +37,16 @@ jobs:
           # Build and push the image with both the release tag and latest
           gcloud builds submit blend_api \
             --project ${{ env.PROJECT_ID }} \
-            --tag ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/explore-blend-api:${{ env.TAG }} \
-            --tag ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/explore-blend-api:latest
+            --tag ${{ env.IMAGE_NAME }}:${{ env.TAG }} \
+            --tag ${{ env.IMAGE_NAME }}:latest
+
+      - name: Deploy to Cloud Run
+        run: |
+          gcloud run deploy ${{ env.SERVICE_NAME }} \
+            --image ${{ env.IMAGE_NAME }}:${{ env.TAG }} \
+            --region ${{ env.REGION }} \
+            --platform managed \
+            --allow-unauthenticated
 
   build-and-upload-frontend:
     runs-on: ubuntu-latest
