@@ -55,5 +55,12 @@ def main(request: Request):
         webhook_secret=webhook_secret,
     )
     explore_url = f"/explore/{body.lookml_model}/{body.name}"
+    explore_id = f"{body.lookml_model}::{body.name}"
 
-    return dict(success=True, explore_url=explore_url)
+    return dict(
+        success=True,
+        explore_url=explore_url,
+        explore_id=explore_id,
+        lookml_model_name=body.lookml_model,
+        explore_name=body.name,
+    )

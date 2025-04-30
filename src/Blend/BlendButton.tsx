@@ -334,19 +334,39 @@ ${queries
       });
 
       if (r.status === 200) {
-        const _artifact = await sdk.ok(
-          sdk.update_artifacts(ARTIFACT_NAMESPACE, [
-            {
-              key: uuid,
-              value: JSON.stringify({
-                queries,
-                joins,
-                payload,
-              }),
-              content_type: "application/json",
-            },
-          ])
-        );
+        try {
+          const _artifact = await sdk.ok(
+            sdk.update_artifacts(ARTIFACT_NAMESPACE, [
+              {
+                key: uuid,
+                value: JSON.stringify({
+                  queries,
+                  joins,
+                  payload,
+                }),
+                content_type: "application/json",
+              },
+            ])
+          );
+        } catch (e) {
+          setError(String(e));
+        }
+        for (var i = 0; i < 10; i++) {
+          try {
+            const _explore = await sdk.ok(
+              sdk.lookml_model_explore({
+                lookml_model_name: r.body.lookml_model_name,
+                explore_name: r.body.explore_name,
+                fields: "id",
+              })
+            );
+            if (_explore.id) {
+              break;
+            }
+          } catch (e) {
+            await new Promise((resolve) => setTimeout(resolve, 1000));
+          }
+        }
         extension.openBrowserWindow(r.body.explore_url, "_blank");
         extension.updateLocation;
       } else {
