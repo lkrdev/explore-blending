@@ -40,8 +40,14 @@ jobs:
           # Build and push the image with both the release tag and latest
           gcloud builds submit blend_api \
             --project ${{ secrets.GCP_PROJECT_ID }} \
-            --tag ${{ env.IMAGE_NAME }}:${{ env.TAG }}, ${{ env.IMAGE_NAME }}:latest \
+            --tag ${{ env.IMAGE_NAME }}:${{ env.TAG }} \
             --suppress-logs
+
+      - name: Add latest tag
+        run: |
+          gcloud artifacts docker tags add ${{ env.IMAGE_NAME }}:${{ env.TAG }} \
+            ${{ env.IMAGE_NAME }}:latest \
+            --project ${{ secrets.GCP_PROJECT_ID }}
 
       - name: Deploy to Cloud Run
         run: |
