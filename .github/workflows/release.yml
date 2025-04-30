@@ -5,7 +5,6 @@ on:
     types: [created]
 
 env:
-  PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
   REGION: us-central1
   SERVICE_NAME: explore-blend-api
   APP_NAME: explore-blending
@@ -21,8 +20,8 @@ jobs:
 
     steps:
       - name: Set IMAGE_NAME
-        run: echo "IMAGE_NAME=${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.SERVICE_NAME }}/explore-blend-api" >> $GITHUB_ENV
-        
+        run: echo "IMAGE_NAME=${{ env.REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ env.SERVICE_NAME }}/explore-blend-api" >> $GITHUB_ENV
+
       - name: Checkout
         uses: actions/checkout@v4
 
@@ -31,6 +30,7 @@ jobs:
         uses: google-github-actions/auth@v2
         with:
           workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
 
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v2
@@ -39,9 +39,10 @@ jobs:
         run: |
           # Build and push the image with both the release tag and latest
           gcloud builds submit blend_api \
-            --project ${{ env.PROJECT_ID }} \
+            --project ${{ secrets.GCP_PROJECT_ID }} \
             --tag ${{ env.IMAGE_NAME }}:${{ env.TAG }} \
-            --tag ${{ env.IMAGE_NAME }}:latest
+            --tag ${{ env.IMAGE_NAME }}:latest \
+            --quiet
 
       - name: Deploy to Cloud Run
         run: |
@@ -81,7 +82,7 @@ jobs:
         uses: google-github-actions/auth@v2
         with:
           workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
-
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
       - name: Upload frontend bundle to GCS
         uses: google-github-actions/upload-cloud-storage@v2
         with:
