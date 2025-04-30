@@ -56,8 +56,6 @@ jobs:
           [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" # This loads nvm
           nvm install # Installs version from .nvmrc
           nvm use     # Uses the installed version
-          node -v     # Verify node version
-          npm -v      # Verify npm version
           npm install --global yarn
 
       - name: Install dependencies

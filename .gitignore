@@ -5,3 +5,4 @@ blend_api.egg-info
 .pytest_cache
 .venv
 __pycache__
+package-lock.json
