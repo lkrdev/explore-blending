@@ -1,3 +1,4 @@
+import { IUser } from "@looker/sdk";
 import snakeCase from "lodash/snakeCase";
 
 export const getDefaultConnectionModel = (conn_name: string) => {
@@ -14,4 +15,25 @@ export const getConnectionModel = (
   } else {
     return getDefaultConnectionModel(conn_name);
   }
+};
+
+
+export const getUserCommitComment = (user: IUser, user_commit_comment: ConfigFormData["user_commit_comment"]) => {
+  if (!user_commit_comment || !user_commit_comment.length) {
+    return
+  }
+  let comment = "# Blended by: ";
+  const out: string[] = [];
+  user_commit_comment.forEach((comment) => {
+    if (comment === "display_name") {
+      out.push(user.display_name || "");
+    }
+    if (comment === "email") {
+      out.push(user.email || "");
+    }
+    if (comment === "id") {
+      out.push(`Looker User ID (${user.id!})`);
+    }
+  });
+  return comment + out.join(" - ");
 };

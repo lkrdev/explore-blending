@@ -15,7 +15,7 @@ import LoadingButton from "../components/ProgressButton";
 import { API_URL, ARTIFACT_NAMESPACE } from "../constants";
 import { useSearchParams } from "../hooks/useSearchParams";
 import { useExtensionContext } from "../Main";
-import { getConnectionModel } from "../utils";
+import { getConnectionModel, getUserCommitComment } from "../utils";
 import { useBlendContext } from "./Context";
 import { SeeSqlDialog } from "./SeeSqlDialog";
 
@@ -109,7 +109,7 @@ export const BlendButton: React.FC<BlendButtonProps> = ({}) => {
   const sdk = useExtensionContext().core40SDK;
   const { extensionSDK: extension, lookerHostData } = useExtensionContext();
   const { search_params } = useSearchParams();
-  const { getExploreField } = useAppContext();
+  const { getExploreField, user } = useAppContext();
   const [error, setError] = useState<string | undefined>();
 
   const safeQueryForWith = (sql: string): string => {
@@ -305,6 +305,10 @@ ${queries
         config.connection_model_mapping
       ),
       connection_name: connection_meta.name || "",
+      user_commit_comment: getUserCommitComment(
+        user!,
+        config.user_commit_comment
+      ),
     };
     const headers: Record<string, string> = {
       "Content-Type": "application/json",
