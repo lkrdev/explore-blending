@@ -10,5 +10,4 @@ COPY . .
 ENV UV_PROJECT_ENVIRONMENT="/usr/local/"
 RUN uv sync --frozen --no-dev
 
-ENV PORT=8080
-CMD ["uv", "run", "functions-framework", "--target=main", "--port=${PORT}"]
+CMD ["uv", "run", "functions-framework", "--target=main"]
