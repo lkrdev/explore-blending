@@ -73,6 +73,7 @@ jobs:
       - name: Upload frontend bundle to GCS
         uses: google-github-actions/upload-cloud-storage@v2
         with:
+          process_gcloudignore: false
           path: dist
           destination: ${{ env.BUCKET_NAME }}/apps/${{ env.APP_NAME }}/${{ env.TAG }}
           parent: false
