@@ -1,6 +1,9 @@
 import {
   Box,
   Button,
+  ButtonGroup,
+  ButtonItem,
+  CodeBlock,
   FieldCheckbox,
   FieldText,
   Form,
@@ -13,8 +16,9 @@ import { set } from "lodash";
 import orderBy from "lodash/orderBy";
 import React, { useEffect, useState } from "react";
 import styled from "styled-components";
+import { useAppContext } from "../AppContext";
 import { useCore40SDK, useExtensionContext } from "../Main";
-import { getConnectionModel } from "../utils";
+import { getConnectionModel, getUserCommitComment } from "../utils";
 
 const StyledSpaceVertical = styled(SpaceVertical)`
   border-left: 1px solid ${({ theme }) => theme.colors.key};
@@ -22,6 +26,7 @@ const StyledSpaceVertical = styled(SpaceVertical)`
 
 const ConfigForm: React.FC = () => {
   const [connections, setConnections] = useState<IDBConnection[]>([]);
+  const { user } = useAppContext();
   const extension = useExtensionContext();
   const sdk = useCore40SDK();
   const [formData, setFormData] = useState<
@@ -166,6 +171,31 @@ const ConfigForm: React.FC = () => {
               onChange={handleChange}
               disabled={!(formData.lookml && formData.accessGrants)}
             />
+            <SpaceVertical gap="xxsmall">
+              <Label>User Commit Comment</Label>
+              <ButtonGroup
+                value={formData.user_commit_comment}
+                onChange={(values: string[]) => {
+                  setFormData({
+                    ...formData,
+                    user_commit_comment:
+                      values as ConfigFormData["user_commit_comment"],
+                  });
+                }}
+              >
+                <ButtonItem value="display_name">Display Name</ButtonItem>
+                <ButtonItem value="email">Email</ButtonItem>
+                <ButtonItem value="id">ID</ButtonItem>
+              </ButtonGroup>
+              {formData.user_commit_comment &&
+              formData.user_commit_comment.length > 0 ? (
+                <CodeBlock border="none">
+                  {getUserCommitComment(user!, formData.user_commit_comment)}
+                </CodeBlock>
+              ) : (
+                ""
+              )}
+            </SpaceVertical>
             <Text>
               Required User Attributes:
               <pre style={{ fontSize: "10px", whiteSpace: "pre-wrap" }}>

@@ -80,6 +80,7 @@ interface IBlendPayload {
   includes: string;
   lookml_model: string;
   connection_name: string;
+  user_commit_comment?: string;
 }
 
 interface INewQuery {
@@ -101,6 +102,7 @@ interface ConfigData {
     [key: string]: { connection_name: string; model_name: string };
   };
   override_api?: string;
+  user_commit_comment?: ("display_name" | "email" | "id")[];
 }
 
 interface ConfigFormData extends ConfigData {
@@ -108,3 +110,5 @@ interface ConfigFormData extends ConfigData {
   userAttribute: string;
   repoName: string;
 }
+
+
