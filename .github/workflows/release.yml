@@ -20,7 +20,7 @@ jobs:
 
     steps:
       - name: Set IMAGE_NAME
-        run: echo "IMAGE_NAME=${{ env.REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ env.APP_NAME }}/ ${{ env.SERVICE_NAME }}" >> $GITHUB_ENV
+        run: echo "IMAGE_NAME=${{ env.REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ env.APP_NAME }}/${{ env.SERVICE_NAME }}" >> $GITHUB_ENV
 
       - name: Checkout
         uses: actions/checkout@v4
