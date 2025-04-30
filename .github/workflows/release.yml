@@ -41,7 +41,7 @@ jobs:
           gcloud builds submit blend_api \
             --project ${{ secrets.GCP_PROJECT_ID }} \
             --tag ${{ env.IMAGE_NAME }}:${{ env.TAG }} \
-            --suppress-logs
+            --gcs-log-dir=gs://${{ env.BUCKET_NAME }}/logs
 
       - name: Add latest tag
         run: |
