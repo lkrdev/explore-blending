@@ -88,10 +88,27 @@ jobs:
         with:
           workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
           project_id: ${{ secrets.GCP_PROJECT_ID }}
-      - name: Upload frontend bundle to GCS
+      - name: Upload frontend bundle to GCS tag
         uses: google-github-actions/upload-cloud-storage@v2
         with:
           process_gcloudignore: false
           path: dist
           destination: ${{ env.BUCKET_NAME }}/apps/${{ env.APP_NAME }}/${{ env.TAG }}
           parent: false
+      - name: Upload frontend bundle to GCS
+        uses: google-github-actions/upload-cloud-storage@v2
+        with:
+          process_gcloudignore: false
+          path: dist
+          destination: ${{ env.BUCKET_NAME }}/apps/${{ env.APP_NAME }}/latest
+          parent: false
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Invalidate Cloud CDN
+        run: |
+          gcloud compute url-maps invalidate-cdn-cache ${{ secrets.GCP_URL_MAP }} \
+            --project ${{ secrets.GCP_PROJECT_ID }} \
+            --path=/apps/${{ env.APP_NAME }}/latest/*
+            --async
