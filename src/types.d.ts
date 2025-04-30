@@ -77,7 +77,6 @@ interface IBlendPayload {
   project_name: string;
   user_attribute: string;
   repo_name: string;
-  explore_label: string;
   includes: string;
   lookml_model: string;
   connection_name: string;

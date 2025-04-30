@@ -9,10 +9,12 @@ import {
   Text,
 } from "@looker/components";
 import { IDBConnection } from "@looker/sdk";
-import { orderBy } from "lodash";
+import { set } from "lodash";
+import orderBy from "lodash/orderBy";
 import React, { useEffect, useState } from "react";
 import styled from "styled-components";
 import { useCore40SDK, useExtensionContext } from "../Main";
+import { getConnectionModel } from "../utils";
 
 const StyledSpaceVertical = styled(SpaceVertical)`
   border-left: 1px solid ${({ theme }) => theme.colors.key};
@@ -62,11 +64,24 @@ const ConfigForm: React.FC = () => {
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
+    let form_with_defaults = { ...formData };
+    connections.forEach((connection) => {
+      const conn_name = connection.name || "";
+      set(form_with_defaults, "connection_model_mapping." + conn_name, {
+        connection_name: conn_name,
+        model_name: getConnectionModel(
+          conn_name,
+          form_with_defaults.connection_model_mapping
+        ),
+      });
+    });
     e.preventDefault();
     e.stopPropagation();
-    await extension.extensionSDK.saveContextData(formData);
+    await extension.extensionSDK.saveContextData(form_with_defaults);
     await extension.extensionSDK.refreshContextData();
+    setFormData(form_with_defaults);
   };
+
   if (!formData) {
     return <Box p="large">Loading...</Box>;
   } else {
@@ -99,14 +114,17 @@ const ConfigForm: React.FC = () => {
             <Label>Connection Model Mapping</Label>
             <StyledSpaceVertical gap="small" pl="small">
               {connections.map((connection) => {
-                const found =
-                  formData.connection_model_mapping?.[connection.name || ""];
+                const conn_name = connection.name || "";
+                const model_name = getConnectionModel(
+                  conn_name,
+                  formData.connection_model_mapping
+                );
                 return (
                   <FieldText
-                    key={connection.name}
-                    label={connection.name}
+                    key={conn_name}
+                    label={conn_name}
                     required
-                    value={found?.model_name || ""}
+                    value={model_name}
                     onChange={(e) => {
                       const new_value = e.target.value;
                       setFormData({
@@ -114,8 +132,8 @@ const ConfigForm: React.FC = () => {
                         // @ts-ignore
                         connection_model_mapping: {
                           ...formData.connection_model_mapping,
-                          [connection.name || ""]: {
-                            connection_name: connection.name || "",
+                          [conn_name]: {
+                            connection_name: conn_name,
                             model_name: new_value,
                           },
                         },
