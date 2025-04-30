@@ -15,6 +15,7 @@ import LoadingButton from "../components/ProgressButton";
 import { API_URL, ARTIFACT_NAMESPACE } from "../constants";
 import { useSearchParams } from "../hooks/useSearchParams";
 import { useExtensionContext } from "../Main";
+import { getConnectionModel } from "../utils";
 import { useBlendContext } from "./Context";
 import { SeeSqlDialog } from "./SeeSqlDialog";
 
@@ -255,7 +256,7 @@ ${queries
     const connection_meta = await sdk.ok(
       sdk.connection(first_query_connection!)
     );
-    const config = await extension.getContextData();
+    const config: Partial<ConfigFormData> = await extension.getContextData();
     const query_sql = await getQuerySql(
       connection_meta.dialect_name || "",
       search_params.get("b") || ""
@@ -285,6 +286,10 @@ ${queries
     const uuid = Array.from(crypto.getRandomValues(new Uint8Array(13)))
       .map((n) => String.fromCharCode(97 + (n % 26)))
       .join("");
+    if (!config.projectName || !config.userAttribute || !config.repoName) {
+      console.error("Missing required config data");
+      return;
+    }
     const payload: IBlendPayload = {
       uuid,
       url: lookerHostData?.hostOrigin,
@@ -294,11 +299,11 @@ ${queries
       project_name: config.projectName,
       user_attribute: config.userAttribute,
       repo_name: config.repoName,
-      explore_label: config.exploreLabel,
-      includes: config.includes,
-      lookml_model:
-        config.connection_model_mapping?.[first_query_connection || ""]
-          .model_name || "",
+      includes: config.includes || "",
+      lookml_model: getConnectionModel(
+        first_query_connection || "",
+        config.connection_model_mapping
+      ),
       connection_name: connection_meta.name || "",
     };
     const headers: Record<string, string> = {
