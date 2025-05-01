@@ -110,5 +110,5 @@ jobs:
         run: |
           gcloud compute url-maps invalidate-cdn-cache ${{ secrets.GCP_URL_MAP }} \
             --project ${{ secrets.GCP_PROJECT_ID }} \
-            --path=/apps/${{ env.APP_NAME }}/latest/*
+            --path=/apps/${{ env.APP_NAME }}/latest/* \
             --async
