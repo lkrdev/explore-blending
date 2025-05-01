@@ -190,7 +190,7 @@ const ConfigForm: React.FC = () => {
               {formData.user_commit_comment &&
               formData.user_commit_comment.length > 0 ? (
                 <CodeBlock border="none">
-                  {getUserCommitComment(user!, formData.user_commit_comment)}
+                  {getUserCommitComment(user, formData.user_commit_comment)}
                 </CodeBlock>
               ) : (
                 ""
