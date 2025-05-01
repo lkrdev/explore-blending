@@ -18,9 +18,9 @@ export const getConnectionModel = (
 };
 
 
-export const getUserCommitComment = (user: IUser, user_commit_comment: ConfigFormData["user_commit_comment"]) => {
-  if (!user_commit_comment || !user_commit_comment.length) {
-    return
+export const getUserCommitComment = (user: IUser | undefined, user_commit_comment: ConfigFormData["user_commit_comment"]) => {
+  if (!user || !user_commit_comment || !user_commit_comment.length) {
+    return undefined;
   }
   let comment = "# Blended by: ";
   const out: string[] = [];

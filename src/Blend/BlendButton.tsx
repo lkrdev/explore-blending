@@ -458,7 +458,7 @@ ${queries
           onClick={openDialog.setTrue}
           disabled={!can_blend || loading.value || invalid_joins.length > 0}
           icon={<Code size={24} />}
-          tooltip="SQL"
+          label="SQL"
         />
         <Tooltip content={invalid_joins_text}>
           <Icon
