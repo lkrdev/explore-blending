@@ -349,9 +349,9 @@ ${queries
             ])
           );
         } catch (e) {
-          setError(String(e));
+          console.error(e);
         }
-        for (var i = 0; i < 10; i++) {
+        for (var i = 0; i < 20; i++) {
           try {
             const _explore = await sdk.ok(
               sdk.lookml_model_explore({
