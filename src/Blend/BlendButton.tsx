@@ -384,7 +384,7 @@ ${queries
     setError(undefined);
     loading.setTrue();
     await extension.refreshContextData();
-    const config = await extension.getContextData();
+    const config = (await extension.getContextData()) || {};
     if (config.lookml) {
       return handleLookMLBlend();
     }
