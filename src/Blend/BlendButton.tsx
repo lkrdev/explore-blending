@@ -258,7 +258,7 @@ ${queries
     );
     const config: Partial<ConfigFormData> = await extension.getContextData();
     const query_sql = await getQuerySql(
-      connection_meta.dialect_name || "",
+      connection_meta.dialect_name || connection_meta.dialect?.name || "",
       search_params.get("b") || ""
     );
 
@@ -396,7 +396,7 @@ ${queries
       sdk.connection(first_query_connection)
     );
     const query_sql = await getQuerySql(
-      connection_meta.dialect_name || "",
+      connection_meta.dialect_name || connection_meta.dialect?.name || "",
       search_params.get("b") || ""
     );
 
@@ -486,7 +486,12 @@ ${queries
               const connection_meta = await sdk.ok(
                 sdk.connection(first_query_connection)
               );
-              return getQuerySql(connection_meta.dialect_name || "", "");
+              return getQuerySql(
+                connection_meta.dialect_name ||
+                  connection_meta.dialect?.name ||
+                  "",
+                ""
+              );
             }
           }}
         />
