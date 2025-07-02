@@ -1,4 +1,4 @@
-import { IUser } from "@looker/sdk";
+import { IDBConnection, IUser } from "@looker/sdk";
 import snakeCase from "lodash/snakeCase";
 
 export const getDefaultConnectionModel = (conn_name: string) => {
@@ -17,8 +17,10 @@ export const getConnectionModel = (
   }
 };
 
-
-export const getUserCommitComment = (user: IUser | undefined, user_commit_comment: ConfigFormData["user_commit_comment"]) => {
+export const getUserCommitComment = (
+  user: IUser | undefined,
+  user_commit_comment: ConfigFormData["user_commit_comment"]
+) => {
   if (!user || !user_commit_comment || !user_commit_comment.length) {
     return undefined;
   }
@@ -36,4 +38,8 @@ export const getUserCommitComment = (user: IUser | undefined, user_commit_commen
     }
   });
   return comment + out.join(" - ");
+};
+
+export const getConnectionDialect = (connection_meta: IDBConnection) => {
+  return connection_meta.dialect_name || connection_meta.dialect?.name || "";
 };
