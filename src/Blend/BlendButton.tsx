@@ -15,7 +15,11 @@ import LoadingButton from "../components/ProgressButton";
 import { API_URL, ARTIFACT_NAMESPACE } from "../constants";
 import { useSearchParams } from "../hooks/useSearchParams";
 import { useExtensionContext } from "../Main";
-import { getConnectionModel, getUserCommitComment } from "../utils";
+import {
+  getConnectionDialect,
+  getConnectionModel,
+  getUserCommitComment,
+} from "../utils";
 import { useBlendContext } from "./Context";
 import { SeeSqlDialog } from "./SeeSqlDialog";
 
@@ -258,7 +262,7 @@ ${queries
     );
     const config: Partial<ConfigFormData> = await extension.getContextData();
     const query_sql = await getQuerySql(
-      connection_meta.dialect_name || connection_meta.dialect?.name || "",
+      getConnectionDialect(connection_meta),
       search_params.get("b") || ""
     );
 
@@ -272,7 +276,7 @@ ${queries
             sql_alias: fieldTransform(
               q.uuid,
               f,
-              connection_meta.dialect_name || ""
+              getConnectionDialect(connection_meta)
             ),
             label_short: found.label_short,
             view_label: getExploreLabel(q, found),
@@ -396,7 +400,7 @@ ${queries
       sdk.connection(first_query_connection)
     );
     const query_sql = await getQuerySql(
-      connection_meta.dialect_name || connection_meta.dialect?.name || "",
+      getConnectionDialect(connection_meta),
       search_params.get("b") || ""
     );
 
@@ -486,12 +490,7 @@ ${queries
               const connection_meta = await sdk.ok(
                 sdk.connection(first_query_connection)
               );
-              return getQuerySql(
-                connection_meta.dialect_name ||
-                  connection_meta.dialect?.name ||
-                  "",
-                ""
-              );
+              return getQuerySql(getConnectionDialect(connection_meta), "");
             }
           }}
         />
