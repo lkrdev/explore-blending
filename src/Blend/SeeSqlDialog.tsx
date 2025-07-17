@@ -15,9 +15,8 @@ import {
 import { CopyAll } from "@styled-icons/material";
 import React, { useEffect, useState } from "react";
 import { useBoolean } from "usehooks-ts";
-import { useExtensionContext } from "../Main";
 import LoadingButton from "../components/ProgressButton"; // Assuming LoadingButtonProps requires is_loading
-
+import useExtensionSdk from "../hooks/useExtensionSdk";
 
 interface SeeSqlDialogProps {
   onClose: () => void;
@@ -31,7 +30,7 @@ export const SeeSqlDialog: React.FC<SeeSqlDialogProps> = ({
   getQuerySql,
 }) => {
   const [sql, setSql] = useState<string | undefined>();
-  const extension = useExtensionContext();
+  const extension = useExtensionSdk();
 
   useEffect(() => {
     getSql();
@@ -83,18 +82,20 @@ export const SeeSqlDialog: React.FC<SeeSqlDialogProps> = ({
       }
     }
     if (!userCancelled) {
-        let currentSql = sql;
-        renameMap.forEach((newName, originalAlias) => {
-            const escapedAlias = originalAlias.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-            const aliasReplaceRegex = new RegExp(`\\b${escapedAlias}\\b`, 'g');
-            currentSql = currentSql.replace(aliasReplaceRegex, newName);
-        });
+      let currentSql = sql;
+      renameMap.forEach((newName, originalAlias) => {
+        const escapedAlias = originalAlias.replace(
+          /[.*+?^${}()|[\]\\]/g,
+          "\\$&"
+        );
+        const aliasReplaceRegex = new RegExp(`\\b${escapedAlias}\\b`, "g");
+        currentSql = currentSql.replace(aliasReplaceRegex, newName);
+      });
       setSql(currentSql);
     } else {
-       alert("Alias renaming aborted.");
+      alert("Alias renaming aborted.");
     }
   };
-
 
   return (
     <Dialog isOpen={true} width="60vw" onClose={onClose} height="90vh">
@@ -114,7 +115,9 @@ export const SeeSqlDialog: React.FC<SeeSqlDialogProps> = ({
         >
           {loading && <Spinner />}
           {!loading && (
-            <> {/* Use Fragment to group Code and Popover */}
+            <>
+              {" "}
+              {/* Use Fragment to group Code and Popover */}
               <Code
                 fontSize="xxsmall"
                 style={{
@@ -127,36 +130,40 @@ export const SeeSqlDialog: React.FC<SeeSqlDialogProps> = ({
               >
                 {sql}
               </Code>
-
               {/* --- Copy Button --- */}
               {/* Wrap IconButton in Box for positioning */}
               <Box position="absolute" top="12px" right="12px">
-                 <Popover
-                   // Ensure content is always defined when Popover renders
-                   content={<Span fontSize={"xxsmall"} p="xxsmall">Copied!</Span>}
-                   isOpen={copying.value}
-                   disableScrollLock // Keep other necessary Popover props
-                   placement="left"
-                   // key prop might not be strictly needed if isOpen controls visibility reliably
-                   // key={String(copying.value)}
-                 >
-                    {/* IconButton is now the child of Popover, Box handles position */}
-                    <IconButton
-                      icon={<CopyAll size={24} color="black" />}
-                      onClick={() => {
-                        if (sql) {
-                          extension.extensionSDK.clipboardWrite(sql);
-                          copying.setTrue();
-                          setTimeout(() => {
-                            copying.setFalse();
-                          }, 1000);
-                        }
-                      }}
-                      tooltip="Copy SQL"
-                      // Remove positioning props from IconButton
-                      // style={{ alignSelf: 'flex-start' }} // This style might not be needed on IconButton now
-                    />
-                 </Popover>
+                <Popover
+                  // Ensure content is always defined when Popover renders
+                  content={
+                    <Span fontSize={"xxsmall"} p="xxsmall">
+                      Copied!
+                    </Span>
+                  }
+                  isOpen={copying.value}
+                  disableScrollLock // Keep other necessary Popover props
+                  placement="left"
+                  // key prop might not be strictly needed if isOpen controls visibility reliably
+                  // key={String(copying.value)}
+                >
+                  {/* IconButton is now the child of Popover, Box handles position */}
+                  <IconButton
+                    icon={<CopyAll size={24} color="black" />}
+                    onClick={() => {
+                      if (sql) {
+                        extension.clipboardWrite(sql);
+                        copying.setTrue();
+                        setTimeout(() => {
+                          copying.setFalse();
+                        }, 1000);
+                      }
+                    }}
+                    // @ts-ignore
+                    tooltip="Copy SQL"
+                    // Remove positioning props from IconButton
+                    // style={{ alignSelf: 'flex-start' }} // This style might not be needed on IconButton now
+                  />
+                </Popover>
               </Box>
               {/* --- End Copy Button --- */}
             </>
@@ -167,14 +174,15 @@ export const SeeSqlDialog: React.FC<SeeSqlDialogProps> = ({
       <DialogFooter>
         <Box display="flex" justifyContent="flex-end" width="100%">
           <Space between>
-             {/* Rename Button - check if overload persists */}
-             <Button
-                onClick={handleRenameQueriesIterative}
-                tooltip="Rename each 'qN' alias individually"
-                disabled={loading}
-             >
-               Rename Query
-             </Button>
+            {/* Rename Button - check if overload persists */}
+            <Button
+              onClick={handleRenameQueriesIterative}
+              // @ts-ignore
+              tooltip="Rename each 'qN' alias individually"
+              disabled={loading}
+            >
+              Rename Query
+            </Button>
 
             {/* Blend Button - Add is_loading prop back */}
             <LoadingButton

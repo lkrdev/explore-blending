@@ -1,4 +1,4 @@
-import { Box, Flex, Heading, Space } from "@looker/components";
+import { Box, Heading, Space, SpaceVertical } from "@looker/components";
 import React from "react";
 import { Redirect, useParams } from "react-router-dom";
 import LearnMoreInfoButton from "../components/Guide/LearnMoreInfoButton";
@@ -10,36 +10,35 @@ import SidebarItems from "./SidebarItems";
 const Blended: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
   if (!slug) {
-    // @ts-ignore
     return <Redirect to="/blend" />;
   } else {
     return (
-      <Flex height="100%" width="100%" overflow="hidden">
+      <Space height="100%" width="100%" overflow="hidden">
         {/* Sidebar */}
-        <Flex
+        <SpaceVertical
           width={300}
+          height="100%"
           p="large"
           style={{ borderRight: "1px solid #e1e1e1" }}
-          flexDirection="column"
         >
-          <Flex justifyContent="space-between">
+          <Space between width="100%">
             <Heading as="h3" mb="medium">
               {APP_NAME}
             </Heading>
             <LearnMoreInfoButton />
-          </Flex>
-          <Box flexGrow={1} height="100%" overflow="auto">
+          </Space>
+          <Space width="100%" overflow="auto">
             <SidebarItems />
-          </Box>
-          <Space />
-          {/* <BlendButton /> */}
-        </Flex>
+          </Space>
+
+          <Box flexGrow={1} minHeight="0" />
+        </SpaceVertical>
 
         {/* Main Content */}
         <Box flex={1} height="100%" position="relative">
           <EmbedExplore explore_id={`sql__${slug}::sql_runner_query`} />
         </Box>
-      </Flex>
+      </Space>
     );
   }
 };

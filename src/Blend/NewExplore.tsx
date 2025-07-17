@@ -79,7 +79,7 @@ const NewExplore: React.FC = () => {
   };
 
   return (
-    <Box mt="medium">
+    <Box width="100%">
       <InputSearch
         placeholder="New explore"
         openOnFocus

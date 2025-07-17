@@ -2,13 +2,14 @@ import { Button, MessageBar, SpaceVertical } from "@looker/components";
 import { create_dashboard_element, IWriteDashboardElement } from "@looker/sdk";
 import React from "react";
 import { useBoolean } from "usehooks-ts";
-import { useCore40SDK, useExtensionContext } from "../Main";
+import useExtensionSdk from "../hooks/useExtensionSdk";
+import useSdk from "../hooks/useSdk";
 import { useBlendedContext } from "./Context";
 import DashboardSearch from "./DashboardSearch";
 
 const SidebarItems: React.FC = () => {
-  const sdk = useCore40SDK();
-  const { extensionSDK } = useExtensionContext();
+  const sdk = useSdk();
+  const extension = useExtensionSdk();
   const { selected_dashboard, query } = useBlendedContext();
   const saved = useBoolean(false);
 
@@ -45,7 +46,7 @@ const SidebarItems: React.FC = () => {
           onPrimaryClick={() => {
             if (selected_dashboard?.id) {
               const url = `/dashboards/${selected_dashboard.id}`;
-              extensionSDK.openBrowserWindow(url, "_blank");
+              extension.openBrowserWindow(url, "_blank");
             }
           }}
         >

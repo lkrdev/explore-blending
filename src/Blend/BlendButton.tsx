@@ -8,18 +8,17 @@ import {
   Tooltip,
 } from "@looker/components";
 import { Code, Error } from "@styled-icons/material";
+import { format } from "prettier-sql";
 import React, { useState } from "react";
 import { useBoolean } from "usehooks-ts";
 import { useAppContext } from "../AppContext";
 import LoadingButton from "../components/ProgressButton";
 import { API_URL, ARTIFACT_NAMESPACE } from "../constants";
+import useExtensionSdk from "../hooks/useExtensionSdk";
+import useSdk from "../hooks/useSdk";
 import { useSearchParams } from "../hooks/useSearchParams";
-import { useExtensionContext } from "../Main";
-import {
-  getConnectionDialect,
-  getConnectionModel,
-  getUserCommitComment,
-} from "../utils";
+import { useSettings } from "../SettingsContext";
+import { getConnectionDialect, getConnectionModel } from "../utils";
 import { useBlendContext } from "./Context";
 import { SeeSqlDialog } from "./SeeSqlDialog";
 
@@ -110,10 +109,12 @@ export const BlendButton: React.FC<BlendButtonProps> = ({}) => {
   const openDialog = useBoolean(false);
   const can_blend = queries.length > 1;
   const loading = useBoolean(false);
-  const sdk = useExtensionContext().core40SDK;
-  const { extensionSDK: extension, lookerHostData } = useExtensionContext();
+  const sdk = useSdk();
+  const extension = useExtensionSdk();
+  const { lookerHostData } = extension;
   const { search_params } = useSearchParams();
   const { getExploreField, user } = useAppContext();
+  const { config, getUserCommitComment } = useSettings();
   const [error, setError] = useState<string | undefined>();
 
   const safeQueryForWith = (sql: string): string => {
@@ -253,17 +254,21 @@ ${queries
   .filter(Boolean)
   .join("\n")}`;
 
-    return new_sql;
+    return format(new_sql, { language: "sql" });
   };
 
   const handleLookMLBlend = async () => {
     const connection_meta = await sdk.ok(
       sdk.connection(first_query_connection!)
     );
-    const config: Partial<ConfigFormData> = await extension.getContextData();
+    if (!config) {
+      console.error("No config available");
+      return;
+    }
+    const b_param = search_params.get("b") || "";
     const query_sql = await getQuerySql(
       getConnectionDialect(connection_meta),
-      search_params.get("b") || ""
+      b_param
     );
 
     const fields: IBlendField[] = [];
@@ -290,7 +295,7 @@ ${queries
     const uuid = Array.from(crypto.getRandomValues(new Uint8Array(13)))
       .map((n) => String.fromCharCode(97 + (n % 26)))
       .join("");
-    if (!config.projectName || !config.userAttribute || !config.repoName) {
+    if (!config.project_name || !config.user_attribute || !config.repo_name) {
       console.error("Missing required config data");
       return;
     }
@@ -300,9 +305,9 @@ ${queries
       fields: fields,
       sql: query_sql,
       explore_ids: explore_ids,
-      project_name: config.projectName,
-      user_attribute: config.userAttribute,
-      repo_name: config.repoName,
+      project_name: config.project_name,
+      user_attribute: config.user_attribute,
+      repo_name: config.repo_name,
       includes: config.includes || "",
       lookml_model: getConnectionModel(
         first_query_connection || "",
@@ -311,7 +316,7 @@ ${queries
       connection_name: connection_meta.name || "",
       user_commit_comment: getUserCommitComment(
         user!,
-        config.user_commit_comment
+        config.user_commit_comment || []
       ),
     };
     const headers: Record<string, string> = {
@@ -322,7 +327,7 @@ ${queries
       "x-base-url": lookerHostData?.hostOrigin || "",
       "x-webhook-secret": extension.createSecretKeyTag("webhook_secret"),
     };
-    if (config.accessGrants) {
+    if (config.access_grants) {
       headers["x-client-id"] = extension.createSecretKeyTag("client_id");
       headers["x-client-secret"] =
         extension.createSecretKeyTag("client_secret");
@@ -387,8 +392,11 @@ ${queries
   const handleBlend = async () => {
     setError(undefined);
     loading.setTrue();
-    await extension.refreshContextData();
-    const config = (await extension.getContextData()) || {};
+    if (!config) {
+      console.error("No config available");
+      loading.setFalse();
+      return;
+    }
     if (config.lookml) {
       return handleLookMLBlend();
     }
@@ -429,7 +437,7 @@ ${queries
   return (
     // Outer Box - This will now stack the Checkbox row and the Button/Icon row vertically
 
-    <Box>
+    <Box width="100%">
       {/* --- ROW 1: Checkbox + Label --- */}
       {/* This is the structure that fixed the checkbox alignment */}
       <Box display="flex" alignItems="center" mb="xsmall">

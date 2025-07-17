@@ -1,12 +1,14 @@
-import { Box, Flex, Heading, Space, Spinner } from "@looker/components";
+import { Box, Heading, Space, SpaceVertical } from "@looker/components";
 import { uniq, uniqueId } from "lodash";
 import React, { useEffect, useMemo, useState } from "react";
 import { useBoolean } from "usehooks-ts";
 import { useAppContext } from "../AppContext";
 import LearnMoreInfoButton from "../components/Guide/LearnMoreInfoButton";
+import LkrLoading from "../components/LkrLoading";
 import { APP_NAME } from "../constants";
+import useSdk from "../hooks/useSdk";
 import { useSearchParams } from "../hooks/useSearchParams";
-import { useCore40SDK } from "../Main";
+import { SettingsIconButton } from "../Settings";
 import { BlendButton } from "./BlendButton";
 import { BlendContextProvider, useBlendContext } from "./Context";
 import NewExplore from "./NewExplore";
@@ -19,29 +21,36 @@ const Blend: React.FC<BlendProps> = () => {
   const { queries, selectedQuery } = useBlendContext();
 
   return (
-    <Flex height="100%" width="100%" overflow="hidden">
+    <Box height="100%" width="100%" overflow="hidden" display="flex">
       {/* Sidebar */}
       {queries.length > 0 && (
-        <Flex
+        <SpaceVertical
+          gap="none"
           width={300}
-          p="large"
+          height="100%"
+          p="small"
           style={{ borderRight: "1px solid #e1e1e1" }}
-          flexDirection="column"
         >
-          <Flex justifyContent="space-between">
-            <Heading as="h3" mb="medium">
-              {APP_NAME}
-            </Heading>
-            <LearnMoreInfoButton />
-          </Flex>
-          <Box flexGrow={1} height="100%" overflow="auto">
-            <QueryList />
-            <Space />
-            <NewExplore />
-          </Box>
-          <Space />
-          <BlendButton />
-        </Flex>
+          <SpaceVertical
+            gap="small"
+            justify="start"
+            style={{ height: "100%", minHeight: 0 }}
+          >
+            <Space between mb="medium" align="center">
+              <Heading as="h3">{APP_NAME}</Heading>
+              <Space gap="none" width="fit-content">
+                <SettingsIconButton />
+                <LearnMoreInfoButton />
+              </Space>
+            </Space>
+            <SpaceVertical gap="small" width="100%" style={{ minHeight: 0 }}>
+              <QueryList />
+              <NewExplore />
+            </SpaceVertical>
+            <Box flexGrow={1} />
+            <BlendButton />
+          </SpaceVertical>
+        </SpaceVertical>
       )}
 
       {/* Main Content */}
@@ -51,7 +60,7 @@ const Blend: React.FC<BlendProps> = () => {
           <SelectedQuery />
         )}
       </Box>
-    </Flex>
+    </Box>
   );
 };
 
@@ -61,7 +70,7 @@ const BlendBase: React.FC = () => {
   const blend_data = search_params.get("b");
   const [hydratedBlendData, setHydratedBlendData] = useState<IBlendData>();
   const { models, getExploreFields, getExploreField } = useAppContext();
-  const sdk = useCore40SDK();
+  const sdk = useSdk();
   useEffect(() => {
     if (models.length > 0) {
       getBlendQueries();
@@ -164,7 +173,19 @@ const BlendBase: React.FC = () => {
   };
 
   if (loading.value) {
-    return <Spinner />;
+    return (
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          height: "100vh",
+          width: "100vw",
+        }}
+      >
+        <LkrLoading duration={750} />
+      </div>
+    );
   } else {
     return (
       <BlendContextProvider blend_data={hydratedBlendData}>
