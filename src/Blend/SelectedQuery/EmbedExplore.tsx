@@ -3,7 +3,8 @@ import { LookerEmbedSDK } from "@looker/embed-sdk";
 import React, { useCallback, useEffect } from "react";
 import { useDebounceValue } from "usehooks-ts";
 import { EmbedContainer } from "../../components/EmbedContainer";
-import { useExtensionContext } from "../../Main";
+import useExtensionSdk from "../../hooks/useExtensionSdk";
+import useSdk from "../../hooks/useSdk";
 import { useBlendContext } from "../Context";
 const EmbedExplore: React.FC<{
   initial_query_id: string;
@@ -26,9 +27,9 @@ const EmbedExplore: React.FC<{
     initial_query_id,
     1000
   );
-  const extensionContext = useExtensionContext();
-  const sdk = extensionContext?.core40SDK;
-  const hostUrl = extensionContext?.extensionSDK?.lookerHostData?.hostUrl;
+  const extension = useExtensionSdk();
+  const sdk = useSdk();
+  const hostUrl = extension?.lookerHostData?.hostUrl;
 
   const setupExplore = (explore: LookerEmbedExplore) => {
     setExplore(explore);
@@ -55,7 +56,7 @@ const EmbedExplore: React.FC<{
         fields: [],
       };
       if (metadata.fields?.length) {
-        newQuery.fields = metadata.fields.map((field) => ({
+        newQuery.fields = metadata.fields.map((field: string) => ({
           id: field,
           label: field,
           type: "dimension",
@@ -88,6 +89,7 @@ const EmbedExplore: React.FC<{
         })
         .on("page:changed", onPageChanged)
         .on("explore:ready", () => {
+          console.log("explore:ready");
           doneLoading?.();
         })
         .build()

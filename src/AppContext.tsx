@@ -3,11 +3,17 @@ import {
   ILookmlModelExplore,
   ILookmlModelExploreField,
   IUser,
-  Looker40SDK,
 } from "@looker/sdk";
 import get from "lodash/get";
-import React, { createContext, useContext, useEffect, useState } from "react";
-import { useExtensionContext } from "./Main";
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
+import useSWR from "swr";
+import useSdk from "./hooks/useSdk";
 
 // Empty interface to start with - add your state types here
 interface IAppContext {
@@ -18,7 +24,7 @@ interface IAppContext {
   getExploreField: (explore_id: string, field_id: string) => IExploreField;
   user: IUser | undefined;
   connections: { [key: string]: string };
-  sdk: Looker40SDK;
+  is_admin: boolean;
 }
 
 // Create the context
@@ -44,23 +50,22 @@ export const AppContextProvider = ({
   const [explore_fields, setExploreFields] = useState<{
     [key: string]: { [key: string]: IExploreField };
   }>({});
-  const [user, setUser] = useState<IUser | undefined>(undefined);
-  // { [explore_id]: connection_name }
+
   const [connections, setConnections] = useState<{
     [key: string]: string;
   }>({});
-  const extensionSdk = useExtensionContext();
-  const sdk = extensionSdk.core40SDK;
+
+  const sdk = useSdk();
 
   useEffect(() => {
     getExplores();
-    getUser();
   }, []);
 
-  const getUser = async () => {
-    const user = await sdk.ok(sdk.me());
-    setUser(user);
-  };
+  const me = useSWR("me", () => sdk.ok(sdk.me()));
+
+  const is_admin = useMemo(() => {
+    return Boolean(me?.data?.role_ids?.includes("2"));
+  }, [me]);
 
   const getExploreFields = async (explore_id: string) => {
     if (explore_id) {
@@ -167,9 +172,9 @@ export const AppContextProvider = ({
         models,
         getExploreFields,
         getExploreField,
-        user,
+        user: me?.data,
         connections,
-        sdk: sdk,
+        is_admin,
       }}
     >
       {children}

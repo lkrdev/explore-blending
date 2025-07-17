@@ -22,6 +22,8 @@ import React, { Suspense, useState } from "react";
 
 import { AppContextProvider } from "./AppContext";
 import Main from "./Main";
+import { SettingsProvider } from "./SettingsContext";
+
 export const App: React.FC = () => {
   const [route, setRoute] = useState("");
   const [routeState, setRouteState] = useState();
@@ -33,9 +35,11 @@ export const App: React.FC = () => {
 
   return (
     <Suspense fallback={<></>}>
-      <ExtensionProvider onRouteChange={onRouteChange}>
+      <ExtensionProvider onRouteChange={onRouteChange} chattyTimeout={-1}>
         <AppContextProvider>
-          <Main route={route} routeState={routeState} />
+          <SettingsProvider>
+            <Main route={route} routeState={routeState} />
+          </SettingsProvider>
         </AppContextProvider>
       </ExtensionProvider>
     </Suspense>

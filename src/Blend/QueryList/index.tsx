@@ -189,7 +189,7 @@ export const QueryList: React.FC = () => {
 
   // --- Component Return JSX ---
   return (
-    <List density={-2}>
+    <List density={-2} width="100%" style={{ overflow: "auto" }}>
       {queries.map((query, index) => {
         // Basic check for valid query object before rendering
         if (!query || !query.uuid) {

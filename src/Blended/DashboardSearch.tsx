@@ -3,7 +3,7 @@ import orderBy from "lodash/orderBy";
 import React, { useEffect, useState } from "react";
 import styled from "styled-components";
 import { useBoolean, useCounter, useDebounceValue } from "usehooks-ts";
-import { useCore40SDK } from "../Main";
+import useSdk from "../hooks/useSdk";
 import { useBlendedContext } from "./Context";
 
 const ProgressBar = styled(Box)`
@@ -29,7 +29,7 @@ const DashboardSearch: React.FC = () => {
   const [search, setSearch] = useState<string>("");
   const [debounced_search, setDebouncedSearch] = useDebounceValue(search, 500);
   const counter = useCounter(0);
-  const sdk = useCore40SDK();
+  const sdk = useSdk();
   const loading = useBoolean(true);
 
   useEffect(() => {
@@ -92,7 +92,7 @@ const DashboardSearch: React.FC = () => {
     <Box position="relative" width="100%">
       <InputSearch
         key={counter.count}
-        defaultValue={selected_dashboard?.title}
+        defaultValue={selected_dashboard?.title ?? ""}
         placeholder="Search dashboards..."
         openOnFocus
         onChange={(value: string) => {
@@ -108,12 +108,16 @@ const DashboardSearch: React.FC = () => {
           setSearch(value);
           setDebouncedSearch(value);
         }}
-        value={value}
+        value={value ?? ""}
         changeOnSelect={false}
         onClose={() => {
           counter.increment();
         }}
-        onSelectOption={handleSelectOption}
+        onSelectOption={(option) => {
+          if (option) {
+            handleSelectOption(option);
+          }
+        }}
         options={search?.length > 0 ? searched_dashboards : recent_dashboards}
         isClearable={false}
         width="100%"

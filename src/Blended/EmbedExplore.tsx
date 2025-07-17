@@ -2,8 +2,9 @@ import type { LookerEmbedExplore } from "@looker/embed-sdk";
 import { LookerEmbedSDK } from "@looker/embed-sdk";
 import React, { useCallback, useEffect } from "react";
 import { useDebounceValue } from "usehooks-ts";
-import { useExtensionContext } from "../Main";
 import { EmbedContainer } from "../components/EmbedContainer";
+import useExtensionSdk from "../hooks/useExtensionSdk";
+import useSdk from "../hooks/useSdk";
 import { useBlendedContext } from "./Context";
 const EmbedExplore: React.FC<{
   explore_id: string;
@@ -15,9 +16,9 @@ const EmbedExplore: React.FC<{
     string | undefined
   >(undefined, 1000);
   const { setQuery } = useBlendedContext();
-  const extensionContext = useExtensionContext();
-  const sdk = extensionContext?.core40SDK;
-  const hostUrl = extensionContext?.extensionSDK?.lookerHostData?.hostUrl;
+  const extension = useExtensionSdk();
+  const sdk = useSdk();
+  const hostUrl = extension?.lookerHostData?.hostUrl;
 
   const setupExplore = (explore: LookerEmbedExplore) => {
     setExplore(explore);
