@@ -23,7 +23,6 @@ application: explore_blending {
       "search_dashboards", 
       "create_dashboard_element", 
       "connection", 
-      "search_dashboards", 
       "dashboard", 
       "all_connections",
       "update_artifacts"

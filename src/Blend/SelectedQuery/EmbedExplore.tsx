@@ -68,7 +68,6 @@ const EmbedExplore: React.FC<{
   };
 
   const onPageChanged = async (event: any) => {
-    console.log("onPageChanged", event);
     const url = new URL(event.page.absoluteUrl);
     const qid = url.searchParams.get("qid");
     setDebouncedQueryId(qid || "");
