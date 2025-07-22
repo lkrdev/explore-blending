@@ -325,10 +325,8 @@ const Settings: React.FC<ConfigModalProps> = ({ isOpen, onClose }) => {
 // Example component that shows how to use the ConfigForm modal
 const SettingsButton: React.FC = () => {
   const openModal = useBoolean(false);
-  const { canAccessSettings } = useSettings();
-  const { user } = useAppContext();
-  const userCanAccessSettings = canAccessSettings(user);
-  if (!userCanAccessSettings) return null;
+  const { can_update_settings } = useSettings();
+  if (!can_update_settings) return null;
   // Check if current user can access settings
 
   return (
@@ -341,10 +339,8 @@ const SettingsButton: React.FC = () => {
 
 export const SettingsIconButton: React.FC = () => {
   const openModal = useBoolean(false);
-  const { canAccessSettings } = useSettings();
-  const { user } = useAppContext();
-  const userCanAccessSettings = canAccessSettings(user);
-  if (!userCanAccessSettings) return null;
+  const { can_update_settings } = useSettings();
+  if (!can_update_settings) return null;
   return (
     <>
       <IconButton
