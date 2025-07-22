@@ -1,7 +1,13 @@
 import { IDBConnection } from "@looker/sdk";
 import { set } from "lodash";
 import orderBy from "lodash/orderBy";
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 import { useAppContext } from "./AppContext";
 import useExtensionSdk from "./hooks/useExtensionSdk";
 import useSdk from "./hooks/useSdk";
@@ -40,9 +46,8 @@ interface SettingsContextType {
     user: any,
     commentType: ("display_name" | "email" | "id")[]
   ) => string | undefined;
-  canAccessSettings: (user: any) => boolean;
-  getUserGroups: () => Promise<any[]>;
   checkCurrentUserCanUpdateSettings: (group_ids: string[]) => boolean;
+  can_update_settings: boolean;
 }
 
 const SettingsContext = createContext<SettingsContextType | undefined>(
@@ -72,7 +77,7 @@ export const SettingsProvider: React.FC<SettingsProviderProps> = ({
   const [config, setConfig] = useState<Partial<ConfigFormData> | undefined>();
   const [connections, setConnections] = useState<IDBConnection[]>([]);
   const [loading, setLoading] = useState(true);
-  const { user } = useAppContext();
+  const { user, is_admin } = useAppContext();
   const extension = useExtensionSdk();
   const sdk = useSdk();
 
@@ -93,6 +98,9 @@ export const SettingsProvider: React.FC<SettingsProviderProps> = ({
   };
 
   const saveConfig = async (configData: Partial<ConfigFormData>) => {
+    if (!can_update_settings) {
+      throw new Error("User does not have permission to update settings");
+    }
     try {
       let form_with_defaults = { ...configData };
 
@@ -133,30 +141,27 @@ export const SettingsProvider: React.FC<SettingsProviderProps> = ({
     return getUserCommitComment(user, commentType);
   };
 
-  const canAccessSettings = (user: any): boolean => {
-    if (!config?.restrict_settings || !config?.settings_group_ids?.length) {
+  // Computed property that provides defaulted boolean values
+  const config_data_with_defaults = useMemo(
+    () => ({
+      ...config,
+      restrict_settings: config?.restrict_settings ?? false,
+      settings_group_ids: config?.settings_group_ids ?? [],
+    }),
+    [config]
+  );
+
+  const can_update_settings = useMemo(() => {
+    if (!config?.restrict_settings) {
       return true;
+    } else if (is_admin) {
+      return true;
+    } else {
+      return checkCurrentUserCanUpdateSettings(
+        config?.settings_group_ids || []
+      );
     }
-
-    if (!user?.group_ids?.length) {
-      return false;
-    }
-
-    // Check if user belongs to any of the allowed groups
-    return user.group_ids.some((groupId: string) =>
-      config.settings_group_ids!.includes(groupId)
-    );
-  };
-
-  const getUserGroups = async (): Promise<any[]> => {
-    try {
-      const groups = await sdk.ok(sdk.all_groups({}));
-      return groups;
-    } catch (error) {
-      console.error("Error fetching user groups:", error);
-      return [];
-    }
-  };
+  }, [is_admin, user, config?.restrict_settings, config?.settings_group_ids]);
 
   const checkCurrentUserCanUpdateSettings = (group_ids: string[]) => {
     return intersection(group_ids, user?.group_ids || []).length > 0;
@@ -167,16 +172,15 @@ export const SettingsProvider: React.FC<SettingsProviderProps> = ({
   }, []);
 
   const value: SettingsContextType = {
-    config,
+    config: config_data_with_defaults,
     connections,
     loading,
     saveConfig,
     updateConfig,
     refreshConfig,
     getUserCommitComment: getUserCommitCommentHelper,
-    canAccessSettings,
-    getUserGroups,
     checkCurrentUserCanUpdateSettings,
+    can_update_settings,
   };
 
   return (
