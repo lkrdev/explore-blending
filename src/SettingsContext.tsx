@@ -97,34 +97,6 @@ export const SettingsProvider: React.FC<SettingsProviderProps> = ({
     }
   };
 
-  const saveConfig = async (configData: Partial<ConfigFormData>) => {
-    if (!can_update_settings) {
-      throw new Error("User does not have permission to update settings");
-    }
-    try {
-      let form_with_defaults = { ...configData };
-
-      // Ensure all connections have model mappings
-      connections.forEach((connection) => {
-        const conn_name = connection.name || "";
-        set(form_with_defaults, "connection_model_mapping." + conn_name, {
-          connection_name: conn_name,
-          model_name: getConnectionModel(
-            conn_name,
-            form_with_defaults.connection_model_mapping
-          ),
-        });
-      });
-
-      await extension.saveContextData(form_with_defaults);
-      await extension.refreshContextData();
-      setConfig(form_with_defaults);
-    } catch (error) {
-      console.error("Error saving config:", error);
-      throw error;
-    }
-  };
-
   const updateConfig = (updates: Partial<ConfigFormData>) => {
     setConfig((prev) => {
       if (!prev) {
@@ -162,6 +134,34 @@ export const SettingsProvider: React.FC<SettingsProviderProps> = ({
       );
     }
   }, [is_admin, user, config?.restrict_settings, config?.settings_group_ids]);
+
+  const saveConfig = async (configData: Partial<ConfigFormData>) => {
+    if (!can_update_settings) {
+      throw new Error("User does not have permission to update settings");
+    }
+    try {
+      let form_with_defaults = { ...configData };
+
+      // Ensure all connections have model mappings
+      connections.forEach((connection) => {
+        const conn_name = connection.name || "";
+        set(form_with_defaults, "connection_model_mapping." + conn_name, {
+          connection_name: conn_name,
+          model_name: getConnectionModel(
+            conn_name,
+            form_with_defaults.connection_model_mapping
+          ),
+        });
+      });
+
+      await extension.saveContextData(form_with_defaults);
+      await extension.refreshContextData();
+      setConfig(form_with_defaults);
+    } catch (error) {
+      console.error("Error saving config:", error);
+      throw error;
+    }
+  };
 
   const checkCurrentUserCanUpdateSettings = (group_ids: string[]) => {
     return intersection(group_ids, user?.group_ids || []).length > 0;
