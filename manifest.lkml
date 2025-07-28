@@ -14,6 +14,7 @@ application: explore_blending {
     use_clipboard: yes
     core_api_methods: [
       "me", 
+      "session",
       "all_lookml_models", 
       "query", 
       "lookml_model_explore", 

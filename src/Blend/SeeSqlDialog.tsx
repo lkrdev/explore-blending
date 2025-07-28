@@ -6,17 +6,22 @@ import {
   DialogContent,
   DialogFooter,
   DialogHeader,
+  Icon,
   IconButton,
   Popover, // Ensure Popover is imported
   Space,
   Span,
   Spinner,
+  Tooltip,
 } from "@looker/components";
-import { CopyAll } from "@styled-icons/material";
+import { CopyAll, Warning } from "@styled-icons/material";
 import React, { useEffect, useState } from "react";
+import useSWR from "swr";
 import { useBoolean } from "usehooks-ts";
 import LoadingButton from "../components/ProgressButton"; // Assuming LoadingButtonProps requires is_loading
 import useExtensionSdk from "../hooks/useExtensionSdk";
+import useSdk from "../hooks/useSdk";
+import { useSettings } from "../SettingsContext";
 
 interface SeeSqlDialogProps {
   onClose: () => void;
@@ -31,6 +36,12 @@ export const SeeSqlDialog: React.FC<SeeSqlDialogProps> = ({
 }) => {
   const [sql, setSql] = useState<string | undefined>();
   const extension = useExtensionSdk();
+  const sdk = useSdk();
+  const { config } = useSettings();
+
+  const workspace = useSWR("workspace", () => {
+    return sdk.ok(sdk.session());
+  });
 
   useEffect(() => {
     getSql();
@@ -186,6 +197,7 @@ export const SeeSqlDialog: React.FC<SeeSqlDialogProps> = ({
 
             {/* Blend Button - Add is_loading prop back */}
             <LoadingButton
+              fullWidth
               is_loading={loading_button.value} // *** FIX: Add this prop back ***
               disabled={loading_button.value || loading}
               color="key"
@@ -199,6 +211,11 @@ export const SeeSqlDialog: React.FC<SeeSqlDialogProps> = ({
             >
               Blend
             </LoadingButton>
+            {workspace?.data?.workspace_id === "dev" && config?.lookml ? (
+              <Tooltip content="It is not recommended to blend in development mode, your developer copy may not have the new LookML model created">
+                <Icon icon={<Warning size={24} />} />
+              </Tooltip>
+            ) : null}
           </Space>
         </Box>
       </DialogFooter>
