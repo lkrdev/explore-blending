@@ -133,38 +133,34 @@ export const BlendButton: React.FC<BlendButtonProps> = ({}) => {
     return `(${trimmedSql})`;
   };
 
-  const getQueryOrSlug = (query_id: string) => {
+  const getQueryOrSlug = async (query_id: string): Promise<string> => {
     // sometimes, looker doesn't like the new string query_id but the slug works.
-    return new Promise<string>(async (resolve, reject) => {
-      try {
-        const runq = await sdk.ok(
+    try {
+      return await sdk.ok(
+        sdk.run_query({
+          query_id: query_id,
+          result_format: "sql",
+        })
+      );
+    } catch (e) {
+      console.error(e);
+    }
+
+    try {
+      const q4s = await sdk.ok(sdk.query_for_slug(query_id));
+      if (q4s.id) {
+        return await sdk.ok(
           sdk.run_query({
-            query_id: query_id,
+            query_id: q4s.id,
             result_format: "sql",
           })
         );
-        return resolve(runq);
-      } catch (e) {
-        console.error(e);
       }
-      try {
-        const q4s = await sdk.ok(sdk.query_for_slug(query_id));
-        if (q4s.id) {
-          const runq2 = await sdk.ok(
-            sdk.run_query({
-              query_id: q4s.id,
-              result_format: "sql",
-            })
-          );
-          return resolve(runq2);
-        }
-      } catch (e) {
-        console.error(e);
-        return resolve(
-          `-- INVALID_QUERY_ID: ${query_id}, couldn't generate SQL. Please contact your looker administrator.`
-        );
-      }
-    });
+    } catch (e) {
+      console.error(e);
+    }
+
+    return `-- INVALID_QUERY_ID: ${query_id}, couldn't generate SQL. Please contact your looker administrator.`;
   };
 
   const getQuerySql = async (dialect: string, b_query_param: string) => {
