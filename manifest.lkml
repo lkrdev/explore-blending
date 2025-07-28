@@ -20,6 +20,7 @@ application: explore_blending {
       "run_query", 
       "create_sql_query", 
       "run_sql_query", 
+      "query_for_slug",
       "search_dashboards", 
       "create_dashboard_element", 
       "connection", 
