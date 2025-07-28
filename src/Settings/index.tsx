@@ -22,10 +22,11 @@ import { Formik } from "formik";
 import React from "react";
 import styled from "styled-components";
 import { useBoolean } from "usehooks-ts";
-import { useAppContext } from "../AppContext";
+import { ModelConnectionCache, useAppContext } from "../AppContext";
 import useExtensionSdk from "../hooks/useExtensionSdk";
-import { ConfigData, useSettings } from "../SettingsContext";
+import { ConfigData, ConfigFormData, useSettings } from "../SettingsContext";
 import { getConnectionModel } from "../utils";
+import CachedModelConnectionPopover from "./CachedModelConnectionPopover";
 
 const StyledSpaceVertical = styled(SpaceVertical)`
   border-left: 1px solid ${({ theme }) => theme.colors.key};
@@ -60,8 +61,10 @@ const Settings: React.FC<ConfigModalProps> = ({ isOpen, onClose }) => {
 
   const initialValues: ConfigData = {
     lookml: config.lookml || false,
-    repo_name: config.repo_name || "",
-    project_name: config.project_name || "",
+    // @ts-expect-error - repoName and projectName are legacy fields
+    repo_name: config.repo_name || config.repoName || "",
+    // @ts-expect-error - repoName and projectName are legacy fields
+    project_name: config.project_name || config.projectName || "",
     includes: config.includes || "",
     access_grants: config.access_grants || false,
     user_attribute: config.user_attribute || "",
@@ -70,6 +73,12 @@ const Settings: React.FC<ConfigModalProps> = ({ isOpen, onClose }) => {
     connection_model_mapping: config.connection_model_mapping || {},
     restrict_settings: config.restrict_settings || false,
     settings_group_ids: config.settings_group_ids || [],
+    use_cached_model_explore_connections:
+      config.use_cached_model_explore_connections || false,
+    cached_model_connection_data:
+      config.cached_model_connection_data || undefined,
+    remove_branded_loading: config.remove_branded_loading || false,
+    display_loading_status: config.display_loading_status || false,
   };
 
   const handleSubmit = async (values: typeof initialValues) => {
@@ -226,16 +235,78 @@ const Settings: React.FC<ConfigModalProps> = ({ isOpen, onClose }) => {
                           setFieldValue("access_grants", e.target.checked)
                         }
                       />
-                      <FieldText
-                        prefix={"extension"}
-                        name="user_attribute"
-                        label="Access Grant User Attribute"
-                        required
-                        value={values.user_attribute}
+                      {Boolean(values.access_grants) && (
+                        <FieldText
+                          prefix={"extension"}
+                          name="user_attribute"
+                          label="Access Grant User Attribute"
+                          required
+                          value={values.user_attribute}
+                          onChange={(e) =>
+                            setFieldValue("user_attribute", e.target.value)
+                          }
+                        />
+                      )}
+                      <FieldCheckbox
+                        name="remove_branded_loading"
+                        label="Remove Branded Loading"
+                        checked={values.remove_branded_loading}
                         onChange={(e) =>
-                          setFieldValue("user_attribute", e.target.value)
+                          setFieldValue(
+                            "remove_branded_loading",
+                            e.target.checked
+                          )
                         }
                       />
+                      <FieldCheckbox
+                        name="display_loading_status"
+                        label="Display Loading Status"
+                        checked={values.display_loading_status}
+                        onChange={(e) =>
+                          setFieldValue(
+                            "display_loading_status",
+                            e.target.checked
+                          )
+                        }
+                      />
+                      <Space>
+                        <FieldCheckbox
+                          name="use_cached_model_explore_connections"
+                          label="Use Cached Model Connection"
+                          checked={values.use_cached_model_explore_connections}
+                          onChange={(e) =>
+                            setFieldValue(
+                              "use_cached_model_explore_connections",
+                              e.target.checked
+                            )
+                          }
+                        />
+                        {values.use_cached_model_explore_connections && (
+                          <CachedModelConnectionPopover
+                            cached_model_connection_data={
+                              values.cached_model_connection_data
+                            }
+                            updateModelConnection={(model_connection) => {
+                              const connections = Object.entries(
+                                model_connection
+                              ).reduce((acc, [model, connection]) => {
+                                if (acc[connection]) {
+                                  acc[connection].push(model);
+                                } else {
+                                  acc[connection] = [model];
+                                }
+                                return acc;
+                              }, {} as ModelConnectionCache["values"]);
+                              setFieldValue("cached_model_connection_data", {
+                                values: connections,
+                                expires_at: new Date(
+                                  Date.now() + 1000 * 60 * 60 * 24 * 365 * 10 // 10 years
+                                ).toISOString(),
+                              });
+                            }}
+                          />
+                        )}
+                      </Space>
                       <SpaceVertical gap="xxsmall">
                         <Label>User Commit Comment</Label>
                         <ButtonGroup

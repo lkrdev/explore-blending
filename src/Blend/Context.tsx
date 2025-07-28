@@ -160,7 +160,8 @@ export const BlendContextProvider = ({
   );
   const [stripLimits, setStripLimits] = useState<boolean>(true);
   const { setSearchParams } = useSearchParams();
-  const { getExploreFields, connections } = useAppContext();
+  const { getExploreFields, model_connections, getModelConnection } =
+    useAppContext();
   // --- End State Definitions ---
 
   // --- Effect to update Search Params ---
@@ -642,8 +643,18 @@ export const BlendContextProvider = ({
 
   // --- Keep first_query_connection, potentially memoize ---
   const first_query_connection = useMemo(() => {
-    return connections[queries[0]?.explore?.id];
-  }, [connections, queries]);
+    const model = queries[0]?.explore.id.split("::")[0];
+    const connection = model_connections[model];
+    if (connection) {
+      return connection;
+    }
+  }, [model_connections, queries]);
+
+  useEffect(() => {
+    if (!first_query_connection) {
+      getModelConnection(queries[0]?.explore.id, true);
+    }
+  }, [first_query_connection]);
 
   // --- Provider Value ---
   return (

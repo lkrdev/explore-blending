@@ -11,7 +11,7 @@ import { useAppContext } from "../AppContext";
 import { useBlendContext } from "./Context";
 
 const NewExplore: React.FC = () => {
-  const { models, connections } = useAppContext();
+  const { models, model_connections } = useAppContext();
   const { newQuery, queries, first_query_connection } = useBlendContext();
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useDebounceValue(search, 500);
@@ -27,8 +27,7 @@ const NewExplore: React.FC = () => {
               const explore_term =
                 `${explore.label} ${explore.name}`.toLowerCase();
               if (
-                first_query_connection !==
-                connections[`${model.name}::${explore.name}`]
+                first_query_connection !== model_connections[`${model.name}`]
               ) {
                 // if its not part of the first connection, don't add it
                 return acc;

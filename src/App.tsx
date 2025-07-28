@@ -18,11 +18,13 @@
  * and returns the logged in user.
  */
 import { ExtensionProvider } from "@looker/extension-sdk-react";
-import React, { Suspense, useState } from "react";
+import React, { Suspense, useEffect, useState } from "react";
 
+import { useBoolean } from "usehooks-ts";
 import { AppContextProvider } from "./AppContext";
 import Main from "./Main";
 import { SettingsProvider } from "./SettingsContext";
+import useExtensionSdk from "./hooks/useExtensionSdk";
 
 export const App: React.FC = () => {
   const [route, setRoute] = useState("");
@@ -36,12 +38,53 @@ export const App: React.FC = () => {
   return (
     <Suspense fallback={<></>}>
       <ExtensionProvider onRouteChange={onRouteChange} chattyTimeout={-1}>
-        <AppContextProvider>
-          <SettingsProvider>
-            <Main route={route} routeState={routeState} />
-          </SettingsProvider>
-        </AppContextProvider>
+        <HydrateModelConnections route={route} routeState={routeState} />
       </ExtensionProvider>
     </Suspense>
   );
+};
+
+const HydrateModelConnections = ({
+  route,
+  routeState,
+}: {
+  route: string;
+  routeState: any;
+}) => {
+  const extensionSdk = useExtensionSdk();
+  const config = extensionSdk.getContextData();
+  const loading = useBoolean(true);
+  useEffect(() => {
+    checkCache();
+  }, []);
+
+  const checkCache = async () => {
+    if (!config?.use_cached_model_explore_connections) {
+      // do nothing
+    } else {
+      if (
+        config.cached_model_connection_data &&
+        Object.keys(config.cached_model_connection_data.values).length > 0
+      ) {
+        console.info("setting model connection cache from config");
+        await extensionSdk.localStorageSetItem(
+          "model_connections:0.0.2",
+          JSON.stringify(config.cached_model_connection_data)
+        );
+      }
+    }
+    loading.setFalse();
+  };
+
+  if (loading.value) {
+    return <></>;
+  } else {
+    return (
+      <AppContextProvider>
+        <SettingsProvider>
+          <Main route={route} routeState={routeState} />
+        </SettingsProvider>
+      </AppContextProvider>
+    );
+  }
 };
