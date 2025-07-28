@@ -89,7 +89,6 @@ const EmbedExplore: React.FC<{
         })
         .on("page:changed", onPageChanged)
         .on("explore:ready", () => {
-          console.log("explore:ready");
           doneLoading?.();
         })
         .build()

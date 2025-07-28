@@ -8,7 +8,7 @@ import React, {
   useMemo,
   useState,
 } from "react";
-import { useAppContext } from "./AppContext";
+import { ModelConnectionCache, useAppContext } from "./AppContext";
 import useExtensionSdk from "./hooks/useExtensionSdk";
 import useSdk from "./hooks/useSdk";
 import { getConnectionModel, getUserCommitComment } from "./utils";
@@ -27,9 +27,13 @@ export interface ConfigData {
   user_commit_comment?: ("display_name" | "email" | "id")[];
   restrict_settings?: boolean;
   settings_group_ids?: string[];
+  use_cached_model_explore_connections?: boolean;
+  cached_model_connection_data?: ModelConnectionCache;
+  display_loading_status?: boolean;
+  remove_branded_loading?: boolean;
 }
 
-interface ConfigFormData extends ConfigData {
+export interface ConfigFormData extends ConfigData {
   project_name: string;
   user_attribute: string;
   repo_name: string;
@@ -48,6 +52,9 @@ interface SettingsContextType {
   ) => string | undefined;
   checkCurrentUserCanUpdateSettings: (group_ids: string[]) => boolean;
   can_update_settings: boolean;
+  updateCachedModelConnection: (
+    cached_model_connection_data: ModelConnectionCache
+  ) => void;
 }
 
 const SettingsContext = createContext<SettingsContextType | undefined>(
@@ -117,8 +124,18 @@ export const SettingsProvider: React.FC<SettingsProviderProps> = ({
   const config_data_with_defaults = useMemo(
     () => ({
       ...config,
+      // @ts-expect-error - repoName and projectName are legacy fields
+      repo_name: config?.repo_name || config?.repoName || "",
+      // @ts-expect-error - repoName and projectName are legacy fields
+      project_name: config?.project_name || config?.projectName || "",
       restrict_settings: config?.restrict_settings ?? false,
       settings_group_ids: config?.settings_group_ids ?? [],
+      use_cached_model_explore_connections:
+        config?.use_cached_model_explore_connections ?? false,
+      display_loading_status: config?.display_loading_status ?? false,
+      cached_model_connection_data: config?.use_cached_model_explore_connections
+        ? config?.cached_model_connection_data
+        : undefined,
     }),
     [config]
   );
@@ -163,6 +180,18 @@ export const SettingsProvider: React.FC<SettingsProviderProps> = ({
     }
   };
 
+  const updateCachedModelConnection = (
+    cached_model_connection_data: ModelConnectionCache
+  ) => {
+    setConfig((prev) => {
+      if (!prev) {
+        return { cached_model_connection_data };
+      } else {
+        return { ...prev, cached_model_connection_data };
+      }
+    });
+  };
+
   const checkCurrentUserCanUpdateSettings = (group_ids: string[]) => {
     return intersection(group_ids, user?.group_ids || []).length > 0;
   };
@@ -181,6 +210,7 @@ export const SettingsProvider: React.FC<SettingsProviderProps> = ({
     getUserCommitComment: getUserCommitCommentHelper,
     checkCurrentUserCanUpdateSettings,
     can_update_settings,
+    updateCachedModelConnection,
   };
 
   return (

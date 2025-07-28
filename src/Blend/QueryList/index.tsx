@@ -213,7 +213,7 @@ export const QueryList: React.FC = () => {
               if (duplicating.value) return; // Prevent action during duplication
               selectQuery(query); // Pass the object
             }}
-            itemRole="listitem" // Accessibility
+            itemRole="listitem"
             style={{
               cursor: duplicating.value ? "default" : "pointer", // Indicate clickability
               userSelect: "none", // Prevent text selection on click
@@ -236,11 +236,7 @@ export const QueryList: React.FC = () => {
                 {query.explore?.label || `Query ${index + 1}`}{" "}
                 {` (${query.uuid})`}
               </Span>
-
-              {/* Action Icons Wrapper */}
               <StyledBox>
-                {/* Delete Button */}
-
                 <IconButton
                   className={`icon-actions ${
                     queries.length > 1 ? "show" : "hide"

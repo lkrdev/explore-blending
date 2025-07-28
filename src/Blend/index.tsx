@@ -1,4 +1,12 @@
-import { Box, Heading, Space, SpaceVertical } from "@looker/components";
+import {
+  Box,
+  FadeIn,
+  Heading,
+  ProgressCircular,
+  Space,
+  SpaceVertical,
+  Span,
+} from "@looker/components";
 import { uniq, uniqueId } from "lodash";
 import React, { useEffect, useMemo, useState } from "react";
 import { useBoolean } from "usehooks-ts";
@@ -9,6 +17,7 @@ import { APP_NAME } from "../constants";
 import useSdk from "../hooks/useSdk";
 import { useSearchParams } from "../hooks/useSearchParams";
 import { SettingsIconButton } from "../Settings";
+import { useSettings } from "../SettingsContext";
 import { BlendButton } from "./BlendButton";
 import { BlendContextProvider, useBlendContext } from "./Context";
 import NewExplore from "./NewExplore";
@@ -69,7 +78,9 @@ const BlendBase: React.FC = () => {
   const { search_params } = useSearchParams();
   const blend_data = search_params.get("b");
   const [hydratedBlendData, setHydratedBlendData] = useState<IBlendData>();
-  const { models, getExploreFields, getExploreField } = useAppContext();
+  const { models, getExploreFields, status, ready } = useAppContext();
+  const { config } = useSettings();
+
   const sdk = useSdk();
   useEffect(() => {
     if (models.length > 0) {
@@ -172,19 +183,35 @@ const BlendBase: React.FC = () => {
     }
   };
 
-  if (loading.value) {
+  if (loading.value || !ready) {
     return (
-      <div
+      <Box
+        display="grid"
         style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          height: "100vh",
-          width: "100vw",
+          gridTemplateRows: "0.75fr fit-content(100%) 1fr",
         }}
+        height="100%"
+        width="100%"
       >
-        <LkrLoading duration={750} />
-      </div>
+        <Box />
+        {!Boolean(config?.remove_branded_loading) ? (
+          <Box margin="0 auto" p="medium">
+            <LkrLoading duration={750} />
+          </Box>
+        ) : (
+          <ProgressCircular size="large" />
+        )}
+        <SpaceVertical
+          gap="none"
+          flexGrow={1}
+          textAlign="center"
+          justify="start"
+          align="center"
+        >
+          {config?.display_loading_status &&
+            status.map((s, i) => <FoldInStatus key={i}>{s}</FoldInStatus>)}
+        </SpaceVertical>
+      </Box>
     );
   } else {
     return (
@@ -193,6 +220,16 @@ const BlendBase: React.FC = () => {
       </BlendContextProvider>
     );
   }
+};
+
+const FoldInStatus: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
+  return (
+    <FadeIn delay="intricate" duration="intricate">
+      <Span fontSize="xxsmall">{children}</Span>
+    </FadeIn>
+  );
 };
 
 export default BlendBase;
