@@ -376,6 +376,9 @@ export const AppContextProvider = ({
   };
 
   const getModelConnection = async (explore_id: string, update?: boolean) => {
+    if (!explore_id) {
+      return;
+    }
     const [model, explore] = explore_id.split("::");
     const connection = get(model_connections, [model]);
     if (connection) {
