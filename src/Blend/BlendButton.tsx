@@ -282,14 +282,34 @@ ${queries
     return format(new_sql, { language: "sql" });
   };
 
-  const handleLookMLBlend = async () => {
+  const handleLookMLBlend: () => Promise<{
+    success: boolean;
+    error?: string;
+  }> = async () => {
     const connection_meta = await sdk.ok(
       sdk.connection(first_query_connection!)
     );
     if (!config) {
       console.error("No config available");
-      return;
+      return {
+        success: false,
+        error:
+          "Please configure the extension to use the LookML Blend feature.",
+      };
     }
+    if (!config.project_name?.length || !config.repo_name?.length) {
+      return {
+        success: false,
+        error: "Configuration error: missing Project Name and Repository Name",
+      };
+    }
+    if (config.access_grants && !config.user_attribute?.length) {
+      return {
+        success: false,
+        error: "Configuration error: missing User Attribute",
+      };
+    }
+
     const b_param = search_params.get("b") || "";
     const query_sql = await getQuerySql(
       getConnectionDialect(connection_meta),
@@ -320,10 +340,7 @@ ${queries
     const uuid = Array.from(crypto.getRandomValues(new Uint8Array(13)))
       .map((n) => String.fromCharCode(97 + (n % 26)))
       .join("");
-    if (!config.project_name || !config.user_attribute || !config.repo_name) {
-      console.error("Missing required config data");
-      return;
-    }
+
     const payload: IBlendPayload = {
       uuid,
       url: lookerHostData?.hostOrigin,
@@ -331,7 +348,7 @@ ${queries
       sql: query_sql,
       explore_ids: explore_ids,
       project_name: config.project_name,
-      user_attribute: config.user_attribute,
+      user_attribute: config.access_grants ? config.user_attribute! : "",
       repo_name: config.repo_name,
       includes: config.includes || "",
       lookml_model: getConnectionModel(
@@ -385,7 +402,7 @@ ${queries
         } catch (e) {
           console.error(e);
         }
-        for (var i = 0; i < 20; i++) {
+        for (var i = 0; i < 30; i++) {
           try {
             const _explore = await sdk.ok(
               sdk.lookml_model_explore({
@@ -398,20 +415,28 @@ ${queries
               break;
             }
           } catch (e) {
-            await new Promise((resolve) => setTimeout(resolve, 1000));
+            await new Promise((resolve) => setTimeout(resolve, 2000));
           }
         }
         extension.openBrowserWindow(r.body.explore_url, "_blank");
         extension.updateLocation;
+        return { success: true };
       } else {
         // @ts-ignore
-        setError(r.status_text);
+        setError(r.statusText);
+        return {
+          success: false,
+          error: r.statusText,
+        };
       }
     } catch (e) {
-      setError(String(e));
       console.error(e);
+      setError(String(e));
+      return {
+        success: false,
+        error: String(e),
+      };
     }
-    loading.setFalse();
   };
 
   const handleBlend = async () => {
@@ -423,10 +448,17 @@ ${queries
       return;
     }
     if (config.lookml) {
-      return handleLookMLBlend();
+      const result = await handleLookMLBlend();
+      if (!result.success) {
+        setError(result.error);
+      }
+      loading.setFalse();
+      return;
     }
     if (!first_query_connection) {
       console.error("No connection found");
+      setError("No connection found");
+      loading.setFalse();
       return;
     }
     const connection_meta = await sdk.ok(
@@ -436,23 +468,33 @@ ${queries
       getConnectionDialect(connection_meta),
       search_params.get("b") || ""
     );
-
-    const create_sql = await sdk.ok(
-      sdk.create_sql_query({
-        sql: query_sql,
-        connection_name: first_query_connection,
-      })
-    );
-
-    if (create_sql.slug) {
-      const _run_sql = await sdk.ok(sdk.run_sql_query(create_sql.slug, "json"));
-      const url = `/extensions/${extension.lookerHostData?.extensionId}/blended/${create_sql.slug}`;
-      extension.openBrowserWindow(url, "_blank");
-    } else {
-      console.error("Failed to create SQL query");
+    try {
+      const create_sql = await sdk.ok(
+        sdk.create_sql_query({
+          sql: query_sql,
+          connection_name: first_query_connection,
+        })
+      );
+      if (create_sql.slug) {
+        const _run_sql = await sdk.ok(
+          sdk.run_sql_query(create_sql.slug, "json")
+        );
+        const url = `/extensions/${extension.lookerHostData?.extensionId}/blended/${create_sql.slug}`;
+        extension.openBrowserWindow(url, "_blank");
+      } else {
+        setError("Failed to create SQL query");
+      }
+    } catch (e) {
+      console.error(e);
+      setError(
+        "Failed to create SQL query, do you have permission to run SQL queries in Looker?"
+      );
+      loading.setFalse();
+      return;
     }
     loading.setFalse();
   };
+
   const invalid_joins = validateJoins();
   const invalid_joins_text =
     invalid_joins.length > 0

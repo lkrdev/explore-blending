@@ -348,10 +348,14 @@ export const AppContextProvider = ({
           `Loaded ${Object.keys(mc).length} model connections from the server`,
         ]);
       }
-      setStatus((p) => [
-        ...p,
-        "Done loading models, explores, and connections",
-      ]);
+      setStatus((p) => {
+        if (
+          p[p.length - 1] === "Done loading models, explores, and connections"
+        ) {
+          return p;
+        }
+        return [...p, "Done loading models, explores, and connections"];
+      });
     }
     ready.setTrue();
   };
