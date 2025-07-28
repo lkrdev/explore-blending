@@ -133,16 +133,45 @@ export const BlendButton: React.FC<BlendButtonProps> = ({}) => {
     return `(${trimmedSql})`;
   };
 
+  const getQueryOrSlug = (query_id: string) => {
+    // sometimes, looker doesn't like the new string query_id but the slug works.
+    return new Promise<string>(async (resolve, reject) => {
+      try {
+        const runq = await sdk.ok(
+          sdk.run_query({
+            query_id: query_id,
+            result_format: "sql",
+          })
+        );
+        return resolve(runq);
+      } catch (e) {
+        console.error(e);
+      }
+      try {
+        const q4s = await sdk.ok(sdk.query_for_slug(query_id));
+        if (q4s.id) {
+          const runq2 = await sdk.ok(
+            sdk.run_query({
+              query_id: q4s.id,
+              result_format: "sql",
+            })
+          );
+          return resolve(runq2);
+        }
+      } catch (e) {
+        console.error(e);
+        return resolve(
+          `-- INVALID_QUERY_ID: ${query_id}, couldn't generate SQL. Please contact your looker administrator.`
+        );
+      }
+    });
+  };
+
   const getQuerySql = async (dialect: string, b_query_param: string) => {
     // Step 1: Fetch SQL from Looker SDK for each query
     const promises = queries.map((q) => {
       // Fetch the SQL as defined in Looker, without adding a limit override
-      return sdk.ok(
-        sdk.run_query({
-          query_id: q.query_id,
-          result_format: "sql",
-        })
-      );
+      return getQueryOrSlug(q.query_id);
     });
 
     // Wait for all SQL results
