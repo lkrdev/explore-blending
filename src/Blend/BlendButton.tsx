@@ -22,6 +22,9 @@ import { getConnectionDialect, getConnectionModel } from "../utils";
 import { useBlendContext } from "./Context";
 import { SeeSqlDialog } from "./SeeSqlDialog";
 
+const EXPLORE_POLL_RETRIES = 30;
+const EXPLORE_POLL_DELAY = 2000;
+
 interface BlendButtonProps {}
 
 const getExploreLabel = (q: IQuery, f: IExploreField) => {
@@ -402,7 +405,7 @@ ${queries
         } catch (e) {
           console.error(e);
         }
-        for (var i = 0; i < 30; i++) {
+        for (var i = 0; i < EXPLORE_POLL_RETRIES; i++) {
           try {
             const _explore = await sdk.ok(
               sdk.lookml_model_explore({
@@ -415,7 +418,9 @@ ${queries
               break;
             }
           } catch (e) {
-            await new Promise((resolve) => setTimeout(resolve, 2000));
+            await new Promise((resolve) =>
+              setTimeout(resolve, EXPLORE_POLL_DELAY)
+            );
           }
         }
         extension.openBrowserWindow(r.body.explore_url, "_blank");
