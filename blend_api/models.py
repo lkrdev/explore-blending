@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+from enum import Enum
 from typing import List, Literal, Optional, Set, Union, cast, get_args
 
 from pydantic import BaseModel, Field
@@ -94,7 +95,6 @@ TMeasureOnlyFieldType = Literal[
     "average_distinct",
     "count",
     "count_distinct",
-    "int",
     "list",
     "max",
     "median",
@@ -108,6 +108,26 @@ TMeasureOnlyFieldType = Literal[
     "sum",
     "sum_distinct",
 ]
+
+
+class MeasureToMeasureEnum(Enum):
+    count = "sum"
+    sum = "sum"
+    sum_distinct = "sum"
+    list = "list"
+    max = "max"
+    min = "min"
+    average = None
+    average_distinct = None
+    count_distinct = None
+    median = None
+    median_distinct = None
+    percent_of_previous = None
+    percent_of_total = None
+    percentile = None
+    percentile_distinct = None
+    running_total = None
+
 
 # Measure-specific types
 TMeasureFieldType = Union[
@@ -166,29 +186,41 @@ class BlendField(BaseModel):
     @property
     def lookml(self) -> str:
         sql: str = "${TABLE}." + self.sql_alias
-        out = f"""  dimension: {self.dimension_name} {{
+        out = ""
+        if (
+            self.create_measure
+            and self.field_type == "measure"
+            and self.forced_measure_type
+        ):
+            out += f"""  measure: {self.dimension_name} {{
     label: "{self.label_short}"
     view_label: "{self.view_label}"
     group_label: "{self.group_label}"
     description: "{self.description}"
-    type: {self.dimension_type}
-    sql: {sql} ;;
-  }}
-        """
-        if self.create_measure and self.field_type == "measure":
-            out += f"""  measure: {self.dimension_name}_measure {{
-    label: "{self.label_short}"
-    view_label: "{self.view_label}"
-    group_label: "{self.group_label}"
-    description: "{self.description}"
-    type: {self.type}
+    type: {self.forced_measure_type}
     sql: {sql} ;;
   }}
             """
+        else:
+            out += f"""  dimension: {self.dimension_name} {{
+    label: "{self.label_short}"
+    view_label: "{self.view_label}"
+    group_label: "{self.group_label}"
+    description: "{self.description}"
+    type: {self.forced_dimension_type}
+    sql: {sql} ;;
+  }}
+        """
+
         return out
 
     @property
-    def dimension_type(self) -> TDimensionFieldType:
+    def forced_measure_type(self) -> TMeasureFieldType | None:
+        if self.type in get_args(TMeasureOnlyFieldType):
+            return MeasureToMeasureEnum[self.type].value
+
+    @property
+    def forced_dimension_type(self) -> TDimensionFieldType:
         if self.type in get_args(TDimensionFieldType):
             return cast(TDimensionFieldType, self.type)
         elif self.type in get_args(TMeasureOnlyFieldType):
