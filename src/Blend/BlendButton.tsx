@@ -335,6 +335,7 @@ ${queries
             view_label: getExploreLabel(q, found),
             type: found.lookml_type,
             query_uuid: q.uuid,
+            field_type: found.type,
           });
         }
       });
@@ -363,6 +364,7 @@ ${queries
         user!,
         config.user_commit_comment || []
       ),
+      create_measures: config.create_measures || false,
     };
     const headers: Record<string, string> = {
       "Content-Type": "application/json",

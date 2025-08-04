@@ -79,6 +79,7 @@ const Settings: React.FC<ConfigModalProps> = ({ isOpen, onClose }) => {
       config.cached_model_connection_data || undefined,
     remove_branded_loading: config.remove_branded_loading || false,
     display_loading_status: config.display_loading_status || false,
+    create_measures: config.create_measures || false,
   };
 
   const handleSubmit = async (values: typeof initialValues) => {
@@ -189,6 +190,14 @@ const Settings: React.FC<ConfigModalProps> = ({ isOpen, onClose }) => {
                         value={values.project_name}
                         onChange={(e) =>
                           setFieldValue("project_name", e.target.value)
+                        }
+                      />
+                      <FieldCheckbox
+                        name="create_measures"
+                        label="Create Measures"
+                        checked={values.create_measures}
+                        onChange={(e) =>
+                          setFieldValue("create_measures", e.target.checked)
                         }
                       />
                       <Label>Connection Model Mapping</Label>

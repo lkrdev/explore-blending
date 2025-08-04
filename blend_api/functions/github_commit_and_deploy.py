@@ -11,7 +11,7 @@ def github_commit_and_deploy(
     uuid: str,
     repo_name: str,
     personal_access_token: str,
-    webhook_secret: str,
+    webhook_secret: str | None,
     project_name: str,
     sdk_base_url: str,
     lookml_model: str,
@@ -50,6 +50,8 @@ def github_commit_and_deploy(
     try:
         # Try to get existing file contents
         contents = repo.get_contents(filename)
+        if isinstance(contents, list):
+            contents = contents[0]
         repo.update_file(
             path=filename,
             message=f"Update blend {uuid}",
