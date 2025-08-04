@@ -61,7 +61,7 @@ const SettingsContext = createContext<SettingsContextType | undefined>(
   undefined
 );
 
-const intersection = (arr1: string[], arr2: string[]): string[] => {
+const arrayIntersection = (arr1: string[], arr2: string[]): string[] => {
   const set1 = new Set(arr1);
   return arr2.filter((item) => set1.has(item));
 };
@@ -141,7 +141,7 @@ export const SettingsProvider: React.FC<SettingsProviderProps> = ({
   );
 
   const checkCurrentUserCanUpdateSettings = (group_ids: string[]) => {
-    return intersection(group_ids, user?.group_ids || []).length > 0;
+    return arrayIntersection(group_ids, user?.group_ids || []).length > 0;
   };
 
   const can_update_settings = useMemo(() => {
