@@ -1,5 +1,5 @@
 import os
-from typing import Dict, List, Set
+from typing import Dict, List, Set, cast
 
 from looker_sdk import init40
 from looker_sdk.rtl import serialize
@@ -46,12 +46,12 @@ def get_sdk(
         )
         settings.is_configured()
         transport = RequestsTransport.configure(settings)
-        auth = AuthSession(settings, transport, serialize.deserialize40, "4.0")
+        auth = AuthSession(settings, transport, serialize.deserialize40, "4.0")  # type: ignore
 
         return Looker40SDK(
             auth,
-            serialize.deserialize40,
-            serialize.serialize40,
+            serialize.deserialize40,  # type: ignore
+            serialize.serialize40,  # type: ignore
             transport,
             "4.0",
         )
@@ -82,8 +82,12 @@ def get_access_grant(
         logger.error("No models provided", sdk_base_url=sdk_base_url)
         raise ValueError("No models provided")
     sdk = get_sdk(sdk_client_id, sdk_client_secret, sdk_base_url)
-    model_groups: Dict[ModelName, Set[GroupId]] = {k: set() for k in models}
-    model_roles: Dict[ModelName, Set[RoleId]] = {k: set() for k in models}
+    model_groups: Dict[ModelName, Set[GroupId]] = {
+        cast(ModelName, k): cast(Set[GroupId], set()) for k in models
+    }
+    model_roles: Dict[ModelName, Set[RoleId]] = {
+        cast(ModelName, k): cast(Set[RoleId], set()) for k in models
+    }
     all_groups: List[Group] = []
 
     # Get all roles
@@ -95,27 +99,33 @@ def get_access_grant(
     roles = sdk.all_roles()
     for role in roles:
         for model_name in models:
-            if model_name in role.model_set.models:
-                model_roles[model_name].add(role.id)
+            if role.model_set and model_name in cast(Set[str], role.model_set.models):
+                model_roles[cast(ModelName, model_name)].add(cast(RoleId, role.id))
 
     for model_name in models:
-        model_role_set = model_roles[model_name]
+        model_role_set = model_roles[cast(ModelName, model_name)]
         for role_id in model_role_set:
             role_groups = sdk.role_groups(role_id)
             all_groups.extend(role_groups)
-            model_groups[model_name].update([group.id for group in role_groups])
+            model_groups[cast(ModelName, model_name)].update(
+                [cast(GroupId, group.id) for group in role_groups]
+            )
 
     group_intersection = set()
     for i, model_name in enumerate(models):
         if i == 0:
-            group_intersection = model_groups[model_name]
+            group_intersection = model_groups[cast(ModelName, model_name)]
         else:
             group_intersection = group_intersection.intersection(
-                model_groups[model_name]
+                model_groups[cast(ModelName, model_name)]
             )
 
     filtered_groups = set(
-        [group.name for group in all_groups if group.id in group_intersection]
+        [
+            cast(GroupId, group.id)
+            for group in all_groups
+            if group.id in cast(Set[str], group_intersection)
+        ]
     )
     if len(filtered_groups) == 0:
         logger.error(
@@ -138,7 +148,7 @@ def get_access_grant(
             access_grant=AccessGrant(
                 uuid=uuid,
                 user_attribute=user_attribute,
-                allowed_values=list(filtered_groups),
+                allowed_values=cast(Set[str], filtered_groups),
             ),
             success=True,
         )

@@ -1,4 +1,5 @@
 import os
+from typing import cast
 
 import functions_framework
 from functions.get_access_grant import get_access_grant
@@ -30,9 +31,12 @@ def main(request: Request):
     webhook_secret = request.headers.get("X-Webhook-Secret")
 
     body = RequestBody.model_validate(request.json)
+    if body.create_measures:
+        for field in body.fields:
+            field.create_measure = True
 
     access_grant: AccessGrant | None = None
-    if sdk_client_id and sdk_client_secret and sdk_base_url:
+    if sdk_client_id and sdk_client_secret and sdk_base_url and body.user_attribute:
         ag_response = get_access_grant(
             sdk_client_id=sdk_client_id,
             sdk_client_secret=sdk_client_secret,
@@ -43,7 +47,7 @@ def main(request: Request):
         )
         if not ag_response["success"]:
             return dict(success=False, error=ag_response["error"]), 400
-        access_grant = ag_response["access_grant"]
+        access_grant = cast(AccessGrant, ag_response["access_grant"])
 
     lookml = body.get_lookml(access_grant)
 

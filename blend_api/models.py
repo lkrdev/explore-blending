@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from typing import List, Literal, Optional, Set, Union, get_args
+from typing import List, Literal, Optional, Set, Union, cast, get_args
 
 from pydantic import BaseModel, Field
 from structlog import get_logger
@@ -148,6 +148,7 @@ class BlendField(BaseModel):
     group_label: str = Field(default="")
     description: str = Field(default="")
     type: TDimensionFieldType | TMeasureFieldType
+    create_measure: bool = Field(default=False)
 
     @property
     def alias(self) -> str:
@@ -173,12 +174,22 @@ class BlendField(BaseModel):
     sql: {sql} ;;
   }}
         """
+        if self.create_measure:
+            out += f"""  measure: {self.dimension_name}_measure {{
+    label: "{self.label_short}"
+    view_label: "{self.view_label}"
+    group_label: "{self.group_label}"
+    description: "{self.description}"
+    type: {self.dimension_type}
+    sql: {sql} ;;
+  }}
+            """
         return out
 
     @property
     def dimension_type(self) -> TDimensionFieldType:
         if self.type in get_args(TDimensionFieldType):
-            return self.type
+            return cast(TDimensionFieldType, self.type)
         elif self.type in get_args(TMeasureOnlyFieldType):
             if self.type in [
                 "average",
@@ -211,8 +222,10 @@ class BlendField(BaseModel):
 
     @property
     def measure_type(self) -> TMeasureFieldType:
-        if self.type in TSharedFieldType:
-            return self.type
+        if self.type in get_args(TSharedFieldType):
+            return cast(TMeasureFieldType, self.type)
+        else:
+            return "string"
 
 
 class RequestBody(BaseModel):
@@ -231,6 +244,8 @@ class RequestBody(BaseModel):
         pattern=r"^[a-z][a-z0-9_]*$"
     )  # Validates snake_case pattern
     user_commit_comment: str | None = Field(default=None)
+    create_measures: bool = Field(default=False)
+
     @property
     def models(self) -> Set[str]:
         return set([explore.split("::")[0] for explore in self.explore_ids])

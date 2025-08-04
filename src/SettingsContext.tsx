@@ -31,6 +31,7 @@ export interface ConfigData {
   cached_model_connection_data?: ModelConnectionCache;
   display_loading_status?: boolean;
   remove_branded_loading?: boolean;
+  create_measures?: boolean;
 }
 
 export interface ConfigFormData extends ConfigData {
@@ -136,6 +137,7 @@ export const SettingsProvider: React.FC<SettingsProviderProps> = ({
       cached_model_connection_data: config?.use_cached_model_explore_connections
         ? config?.cached_model_connection_data
         : undefined,
+      create_measures: config?.create_measures ?? false,
     }),
     [config]
   );
