@@ -140,6 +140,10 @@ export const SettingsProvider: React.FC<SettingsProviderProps> = ({
     [config]
   );
 
+  const checkCurrentUserCanUpdateSettings = (group_ids: string[]) => {
+    return intersection(group_ids, user?.group_ids || []).length > 0;
+  };
+
   const can_update_settings = useMemo(() => {
     if (!config?.restrict_settings) {
       return true;
@@ -150,7 +154,13 @@ export const SettingsProvider: React.FC<SettingsProviderProps> = ({
         config?.settings_group_ids || []
       );
     }
-  }, [is_admin, user, config?.restrict_settings, config?.settings_group_ids]);
+  }, [
+    is_admin,
+    user,
+    config?.restrict_settings,
+    config?.settings_group_ids,
+    checkCurrentUserCanUpdateSettings,
+  ]);
 
   const saveConfig = async (configData: Partial<ConfigFormData>) => {
     if (!can_update_settings) {
@@ -190,10 +200,6 @@ export const SettingsProvider: React.FC<SettingsProviderProps> = ({
         return { ...prev, cached_model_connection_data };
       }
     });
-  };
-
-  const checkCurrentUserCanUpdateSettings = (group_ids: string[]) => {
-    return intersection(group_ids, user?.group_ids || []).length > 0;
   };
 
   useEffect(() => {
