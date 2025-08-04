@@ -60,7 +60,7 @@ def main(request: Request):
             webhook_secret=webhook_secret,
         )
     except Exception as e:
-        logger.error("Error committing and deploying", error=e)
+        logger.exception("Error committing and deploying")
         return dict(success=False, error=str(e)), 500
 
     explore_url = f"/explore/{body.lookml_model}/{body.name}"
