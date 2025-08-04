@@ -157,8 +157,8 @@ const Settings: React.FC<ConfigModalProps> = ({ isOpen, onClose }) => {
                     />
                   )}
                   <Span fontSize="small" color="text2">
-                    When enabled, only users in the specified groups can access
-                    these settings.
+                    When enabled, only users in the specified groups or admins
+                    can access these settings.
                   </Span>
                   <Span fontSize="small" color="critical">
                     {errors.settings_group_ids ? errors.settings_group_ids : ""}
