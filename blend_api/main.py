@@ -51,14 +51,18 @@ def main(request: Request):
         access_grant = cast(AccessGrant, ag_response["access_grant"])
 
     lookml = body.get_lookml(access_grant)
+    try:
+        github_commit_and_deploy(
+            lookml=lookml,
+            sdk_base_url=sdk_base_url,
+            **body.model_dump(),
+            personal_access_token=personal_access_token,
+            webhook_secret=webhook_secret,
+        )
+    except Exception as e:
+        logger.error("Error committing and deploying", error=e)
+        return dict(success=False, error=str(e)), 500
 
-    github_commit_and_deploy(
-        lookml=lookml,
-        sdk_base_url=sdk_base_url,
-        **body.model_dump(),
-        personal_access_token=personal_access_token,
-        webhook_secret=webhook_secret,
-    )
     explore_url = f"/explore/{body.lookml_model}/{body.name}"
     explore_id = f"{body.lookml_model}::{body.name}"
 
