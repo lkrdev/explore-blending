@@ -187,13 +187,17 @@ class BlendField(BaseModel):
     def lookml(self) -> str:
         sql: str = "${TABLE}." + self.sql_alias
         out = ""
-        if self.create_measure and self.field_type == "measure" and self.measure_type:
+        if (
+            self.create_measure
+            and self.field_type == "measure"
+            and self.forced_measure_type
+        ):
             out += f"""  measure: {self.dimension_name} {{
     label: "{self.label_short}"
     view_label: "{self.view_label}"
     group_label: "{self.group_label}"
     description: "{self.description}"
-    type: {self.type}
+    type: {self.forced_measure_type}
     sql: {sql} ;;
   }}
             """
@@ -203,7 +207,7 @@ class BlendField(BaseModel):
     view_label: "{self.view_label}"
     group_label: "{self.group_label}"
     description: "{self.description}"
-    type: {self.type}
+    type: {self.forced_dimension_type}
     sql: {sql} ;;
   }}
         """
@@ -211,7 +215,7 @@ class BlendField(BaseModel):
         return out
 
     @property
-    def measure_type(self) -> TMeasureFieldType | None:
+    def forced_measure_type(self) -> TMeasureFieldType | None:
         if self.type in get_args(TMeasureOnlyFieldType):
             val = MeasureToMeasureEnum[self.type].value
             if val:
@@ -220,7 +224,7 @@ class BlendField(BaseModel):
                 return None
 
     @property
-    def dimension_type(self) -> TDimensionFieldType:
+    def forced_dimension_type(self) -> TDimensionFieldType:
         if self.type in get_args(TDimensionFieldType):
             return cast(TDimensionFieldType, self.type)
         elif self.type in get_args(TMeasureOnlyFieldType):
