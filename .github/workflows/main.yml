@@ -16,15 +16,13 @@ jobs:
       id-token: "write"
 
     steps:
+
+      - name: Checkout
+        uses: actions/checkout@v4
       - name: Set TAG
         run: echo "TAG=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
       - name: Set IMAGE_NAME
         run: echo "IMAGE_NAME=${{ env.REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ env.APP_NAME }}/${{ env.SERVICE_NAME }}" >> $GITHUB_ENV
-
-      - name: Checkout
-        uses: actions/checkout@v4
-
-
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v2
         with:
@@ -60,6 +58,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Set TAG
+        run: echo "TAG=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+
       - name: Install and use Node.js via nvm
         run: |
           curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
@@ -81,6 +82,10 @@ jobs:
         with:
           workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
           project_id: ${{ secrets.GCP_PROJECT_ID }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
       - name: Upload frontend bundle to GCS tag
         uses: google-github-actions/upload-cloud-storage@v2
         with:
