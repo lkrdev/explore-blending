@@ -217,11 +217,7 @@ class BlendField(BaseModel):
     @property
     def forced_measure_type(self) -> TMeasureFieldType | None:
         if self.type in get_args(TMeasureOnlyFieldType):
-            val = MeasureToMeasureEnum[self.type].value
-            if val:
-                return val
-            else:
-                return None
+            return MeasureToMeasureEnum[self.type].value
 
     @property
     def forced_dimension_type(self) -> TDimensionFieldType:
