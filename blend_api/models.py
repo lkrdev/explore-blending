@@ -149,6 +149,7 @@ class BlendField(BaseModel):
     description: str = Field(default="")
     type: TDimensionFieldType | TMeasureFieldType
     create_measure: bool = Field(default=False)
+    field_type: Literal["dimension", "measure"] = Field(default="dimension")
 
     @property
     def alias(self) -> str:
@@ -174,13 +175,13 @@ class BlendField(BaseModel):
     sql: {sql} ;;
   }}
         """
-        if self.create_measure:
+        if self.create_measure and self.field_type == "measure":
             out += f"""  measure: {self.dimension_name}_measure {{
     label: "{self.label_short}"
     view_label: "{self.view_label}"
     group_label: "{self.group_label}"
     description: "{self.description}"
-    type: {self.dimension_type}
+    type: {self.type}
     sql: {sql} ;;
   }}
             """
@@ -218,13 +219,6 @@ class BlendField(BaseModel):
                 return "string"
         else:
             logger.warning("Invalid field type", type=self.type)
-            return "string"
-
-    @property
-    def measure_type(self) -> TMeasureFieldType:
-        if self.type in get_args(TSharedFieldType):
-            return cast(TMeasureFieldType, self.type)
-        else:
             return "string"
 
 

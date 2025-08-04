@@ -66,6 +66,7 @@ interface IBlendField {
   description?: string;
   type: string;
   query_uuid: string;
+  field_type: "dimension" | "measure";
 }
 
 interface IBlendPayload {
@@ -81,6 +82,7 @@ interface IBlendPayload {
   lookml_model: string;
   connection_name: string;
   user_commit_comment?: string;
+  create_measures: boolean;
 }
 
 interface INewQuery {

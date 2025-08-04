@@ -33,7 +33,8 @@ def main(request: Request):
     body = RequestBody.model_validate(request.json)
     if body.create_measures:
         for field in body.fields:
-            field.create_measure = True
+            if field.field_type == "measure":
+                field.create_measure = True
 
     access_grant: AccessGrant | None = None
     if sdk_client_id and sdk_client_secret and sdk_base_url and body.user_attribute:
