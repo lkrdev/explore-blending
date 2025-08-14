@@ -289,9 +289,36 @@ ${queries
     success: boolean;
     error?: string;
   }> = async () => {
-    const connection_meta = await sdk.ok(
-      sdk.connection(first_query_connection!)
-    );
+    let connection_name = first_query_connection;
+
+    // If no first_query_connection, try to get it from lookml_model_explore
+    if (!connection_name && queries.length > 0) {
+      try {
+        const first_query = queries[0];
+        const [model, explore] = first_query.explore.id.split("::");
+        const model_explore = await sdk.ok(
+          sdk.lookml_model_explore({
+            lookml_model_name: model,
+            explore_name: explore,
+          })
+        );
+        if (model_explore?.connection_name) {
+          connection_name = model_explore.connection_name;
+        }
+      } catch (e) {
+        console.error("Failed to get connection from lookml_model_explore:", e);
+      }
+    }
+
+    if (!connection_name) {
+      return {
+        success: false,
+        error:
+          "No connection found for the first query. Please ensure the explore has a valid connection.",
+      };
+    }
+
+    const connection_meta = await sdk.ok(sdk.connection(connection_name));
     if (!config) {
       console.error("No config available");
       return {
@@ -356,7 +383,7 @@ ${queries
       repo_name: config.repo_name,
       includes: config.includes || "",
       lookml_model: getConnectionModel(
-        first_query_connection || "",
+        connection_name,
         config.connection_model_mapping
       ),
       connection_name: connection_meta.name || "",
