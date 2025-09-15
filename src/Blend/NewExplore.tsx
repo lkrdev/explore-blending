@@ -8,16 +8,20 @@ import { ILookmlModelNavExplore } from "@looker/sdk";
 import React, { useMemo, useState } from "react";
 import { useDebounceValue } from "usehooks-ts";
 import { useAppContext } from "../AppContext";
+import { useSettings } from "../SettingsContext";
 import { useBlendContext } from "./Context";
 
 const NewExplore: React.FC = () => {
   const { models, model_connections } = useAppContext();
   const { newQuery, queries, first_query_connection } = useBlendContext();
+  const { config } = useSettings();
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useDebounceValue(search, 500);
   const grouped: SelectOptionGroupProps[] = useMemo(() => {
     return models
       .reduce((acc, model) => {
+        // create the grouped options for the model/explore options.
+
         if (model?.explores?.length) {
           const model_term = `${model.label} ${model.name}`.toLowerCase();
           const explores = model?.explores?.reduce((acc, explore) => {
@@ -27,9 +31,11 @@ const NewExplore: React.FC = () => {
               const explore_term =
                 `${explore.label} ${explore.name}`.toLowerCase();
               if (
-                first_query_connection !== model_connections[`${model.name}`]
+                first_query_connection !== model_connections[`${model.name}`] &&
+                !config?.collapse_connection
               ) {
                 // if its not part of the first connection, don't add it
+                // only do this if collapse connection is not enabled
                 return acc;
               }
 

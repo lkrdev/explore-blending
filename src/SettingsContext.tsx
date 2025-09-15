@@ -32,6 +32,9 @@ export interface ConfigData {
   display_loading_status?: boolean;
   remove_branded_loading?: boolean;
   create_measures?: boolean;
+  collapse_connection?: boolean;
+  collapse_connection_name?: string;
+  collapse_connection_model_name?: string;
 }
 
 export interface ConfigFormData extends ConfigData {
@@ -138,6 +141,10 @@ export const SettingsProvider: React.FC<SettingsProviderProps> = ({
         ? config?.cached_model_connection_data
         : undefined,
       create_measures: config?.create_measures ?? false,
+      collapse_connection: config?.collapse_connection ?? false,
+      collapse_connection_name: config?.collapse_connection_name ?? "",
+      collapse_connection_model_name:
+        config?.collapse_connection_model_name ?? "",
     }),
     [config]
   );
@@ -178,7 +185,9 @@ export const SettingsProvider: React.FC<SettingsProviderProps> = ({
           connection_name: conn_name,
           model_name: getConnectionModel(
             conn_name,
-            form_with_defaults.connection_model_mapping
+            form_with_defaults.connection_model_mapping,
+            form_with_defaults.collapse_connection,
+            form_with_defaults.collapse_connection_model_name
           ),
         });
       });

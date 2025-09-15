@@ -4,6 +4,7 @@ import {
   ButtonGroup,
   ButtonItem,
   ButtonOutline,
+  ButtonToggle,
   CodeBlock,
   Dialog,
   DialogContent,
@@ -80,6 +81,9 @@ const Settings: React.FC<ConfigModalProps> = ({ isOpen, onClose }) => {
     remove_branded_loading: config.remove_branded_loading || false,
     display_loading_status: config.display_loading_status || false,
     create_measures: config.create_measures || false,
+    collapse_connection: config.collapse_connection || false,
+    collapse_connection_name: config.collapse_connection_name || "",
+    collapse_connection_model_name: config.collapse_connection_model_name || "",
   };
 
   const handleSubmit = async (values: typeof initialValues) => {
@@ -103,6 +107,20 @@ const Settings: React.FC<ConfigModalProps> = ({ isOpen, onClose }) => {
             ", "
           )}`;
         }
+      }
+    }
+    if (values.collapse_connection) {
+      if (!values.collapse_connection_model_name?.length) {
+        errors.collapse_connection_model_name =
+          "Universal Connection Model Name is required";
+      }
+      if (!values.collapse_connection_name?.length) {
+        errors.collapse_connection_name =
+          "Universal Connection Name is required";
+      } else if (
+        connections!.find((c) => c.name === values.collapse_connection_name)
+      ) {
+        errors.collapse_connection_name = `Could not find connection ${values.collapse_connection_name}`;
       }
     }
     return errors;
@@ -200,34 +218,92 @@ const Settings: React.FC<ConfigModalProps> = ({ isOpen, onClose }) => {
                           setFieldValue("create_measures", e.target.checked)
                         }
                       />
-                      <Label>Connection Model Mapping</Label>
-                      <StyledSpaceVertical gap="small" pl="small">
-                        {connections.map((connection) => {
-                          const conn_name = connection.name || "";
-                          const model_name = getConnectionModel(
-                            conn_name,
-                            values.connection_model_mapping
-                          );
-                          return (
-                            <FieldText
-                              key={conn_name}
-                              label={conn_name}
-                              required
-                              value={model_name}
-                              onChange={(e) => {
-                                const new_value = e.target.value;
-                                setFieldValue("connection_model_mapping", {
-                                  ...values.connection_model_mapping,
-                                  [conn_name]: {
-                                    connection_name: conn_name,
-                                    model_name: new_value,
-                                  },
-                                });
-                              }}
-                            />
-                          );
-                        })}
-                      </StyledSpaceVertical>
+                      {/* Single Connection Mode Toggle */}
+                      <SpaceVertical gap="small">
+                        <Label>Connection Mode</Label>
+                        <ButtonToggle
+                          value={
+                            values.collapse_connection ? "single" : "multiple"
+                          }
+                          onChange={(selectedValue: string) => {
+                            const isSingle = selectedValue === "single";
+                            setFieldValue("collapse_connection", isSingle);
+                          }}
+                        >
+                          <ButtonItem value="multiple">
+                            Keep Original Connection
+                          </ButtonItem>
+                          <ButtonItem value="single">
+                            Universal Connection
+                          </ButtonItem>
+                        </ButtonToggle>
+                      </SpaceVertical>
+
+                      {/* Conditional rendering based on collapse connection mode */}
+                      {values.collapse_connection ? (
+                        <>
+                          <FieldText
+                            name="collapse_connection_name"
+                            label="Universal Connection Name"
+                            required
+                            value={values.collapse_connection_name || ""}
+                            defaultValue={connections?.[0]?.name || ""}
+                            onChange={(e) =>
+                              setFieldValue(
+                                "collapse_connection_name",
+                                e.target.value
+                              )
+                            }
+                            placeholder="Enter model name for the collapse connection setting"
+                          />
+                          <FieldText
+                            name="collapse_connection_model_name"
+                            label="Universal Connection Model Name"
+                            required
+                            value={values.collapse_connection_model_name || ""}
+                            onChange={(e) =>
+                              setFieldValue(
+                                "collapse_connection_model_name",
+                                e.target.value
+                              )
+                            }
+                            placeholder="Enter model name for the all connections setting"
+                          />
+                        </>
+                      ) : (
+                        <>
+                          <Label>Connection Model Mapping</Label>
+                          <StyledSpaceVertical gap="small" pl="small">
+                            {connections.map((connection) => {
+                              const conn_name = connection.name || "";
+                              const model_name = getConnectionModel(
+                                conn_name,
+                                values.connection_model_mapping,
+                                values.collapse_connection,
+                                values.collapse_connection_model_name
+                              );
+                              return (
+                                <FieldText
+                                  key={conn_name}
+                                  label={conn_name}
+                                  required
+                                  value={model_name}
+                                  onChange={(e) => {
+                                    const new_value = e.target.value;
+                                    setFieldValue("connection_model_mapping", {
+                                      ...values.connection_model_mapping,
+                                      [conn_name]: {
+                                        connection_name: conn_name,
+                                        model_name: new_value,
+                                      },
+                                    });
+                                  }}
+                                />
+                              );
+                            })}
+                          </StyledSpaceVertical>
+                        </>
+                      )}
                       <FieldText
                         name="includes"
                         label="Includes to put in the LookML file"

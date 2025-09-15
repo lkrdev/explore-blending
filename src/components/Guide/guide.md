@@ -14,35 +14,16 @@ There are two modes, one that will use Looker's SQL runner to perform the blendi
 
 > **Note**
 > 
-> *single connection* mode
+> *single connection required* (when Universal Connection Mode is disabled)
 >
 > The extension only supports blending explores from the same connection. The connection used is chosen from the first explore. To change the connection you need to reset the user interface
+
+## Universal Connection Mode
+
+When Universal Connection Mode is disabled, the extension operates in a simplified mode where all blended explores must use the same database connection. When enabled, instead of mapping each connection to a separate model, you specify a single model name and connection namethat will be used for all blends. This setting will be infrequently used unless you know that all your Looker connections have access to the same datasets; however it can be very useful if you've set it up this way so you can blend across all connections.
 
 ## Dialect Support
 - BigQuery (beta)
 - Postgres (beta)
 
-## TODOs
-
-### Critical Bugs
-- Implement validation in `JoinRow` to prevent duplicate `to_field` usage
-
-### Join Management
-- Implement join order validation and enforcement
-  - Queries must be joined in a valid dependency order
-  - Options:
-    1. (Preferred) Auto-determine required join order based on relationships
-    2. (Simple) Use sidepanel order as join order (don't let a user select fields from later joins)
-- Extend join support beyond BigQuery/Postgres (Snowflake next? Will any changes need to be made?)
-
-### URL/State Management
-- Restore blend from saved SQL using -- b=sql_query_id
-- Restore blend from explore
-
-### UI Improvements
-- Enhance dashboard functionality:
-  - Improve dashboard picker interface
-  - Add dashboard title saving capability
-
-TODO:
-/config field validation for things like snake_case for model names and user attribute
+**We will support all dialects that Looker supports, but we ask you reach out to your Looker account team and we'll prioritize your request.**
