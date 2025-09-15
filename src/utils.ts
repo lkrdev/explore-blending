@@ -1,5 +1,6 @@
 import { IDBConnection, IUser } from "@looker/sdk";
 import snakeCase from "lodash/snakeCase";
+import { ConfigFormData } from "./SettingsContext";
 
 export const getDefaultConnectionModel = (conn_name: string) => {
   return `blend_${snakeCase(conn_name)}`;
@@ -7,13 +8,19 @@ export const getDefaultConnectionModel = (conn_name: string) => {
 
 export const getConnectionModel = (
   conn_name: string,
-  connnection_config_mapping: ConfigFormData["connection_model_mapping"]
+  connnection_config_mapping: ConfigFormData["connection_model_mapping"],
+  single_connection: boolean | undefined,
+  single_connection_model: string | undefined
 ) => {
-  const found = connnection_config_mapping?.[conn_name];
-  if (found?.model_name && found.model_name.length) {
-    return found.model_name;
+  if (!!single_connection && !!single_connection_model?.length) {
+    return single_connection_model;
   } else {
-    return getDefaultConnectionModel(conn_name);
+    const found = connnection_config_mapping?.[conn_name];
+    if (found?.model_name && found.model_name.length) {
+      return found.model_name;
+    } else {
+      return getDefaultConnectionModel(conn_name);
+    }
   }
 };
 

@@ -371,7 +371,18 @@ ${queries
     const uuid = Array.from(crypto.getRandomValues(new Uint8Array(13)))
       .map((n) => String.fromCharCode(97 + (n % 26)))
       .join("");
-
+    const payload_connection_name =
+      config.collapse_connection && config.collapse_connection_name?.length
+        ? config.collapse_connection_name
+        : connection_meta.name || "";
+    if (!payload_connection_name.length) {
+      setError("No connection name found");
+      loading.setFalse();
+      return {
+        success: false,
+        error: "No connection name found",
+      };
+    }
     const payload: IBlendPayload = {
       uuid,
       url: lookerHostData?.hostOrigin,
@@ -384,9 +395,11 @@ ${queries
       includes: config.includes || "",
       lookml_model: getConnectionModel(
         connection_name,
-        config.connection_model_mapping
+        config.connection_model_mapping,
+        config.collapse_connection,
+        config.collapse_connection_model_name
       ),
-      connection_name: connection_meta.name || "",
+      connection_name: payload_connection_name,
       user_commit_comment: getUserCommitComment(
         user!,
         config.user_commit_comment || []
