@@ -25,6 +25,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Set Cloud Run Version tag
+        run: |
+          echo "CLOUD_RUN_VERSION_TAG=v$(echo ${{ github.event.release.tag_name }} | tr '.' '-')" >> $GITHUB_ENV
 
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v2
@@ -54,6 +57,7 @@ jobs:
           gcloud run deploy ${{ env.SERVICE_NAME }} \
             --image ${{ env.IMAGE_NAME }}:${{ env.TAG }} \
             --region ${{ env.REGION }} \
+            --tag ${{ env.CLOUD_RUN_VERSION_TAG }} \
             --platform managed \
             --allow-unauthenticated
 
