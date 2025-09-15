@@ -42,6 +42,8 @@ interface IBlendContext {
   deleteJoin: (to_query_id: string, join_uuid: string) => void;
   // *** Added function to update only fields ***
   updateQueryFields: (uuid: string, fields: IQuery["fields"]) => void;
+  // *** Reset all queries and joins ***
+  resetAll: () => void;
   connection?: string; // Keep if used
   validateJoin: (join: IJoin) => boolean;
   validateJoins: () => IQueryJoin[];
@@ -489,6 +491,12 @@ export const BlendContextProvider = ({
     [setQueries, setSelectedQuery]
   ); // Added dependencies
 
+  const resetAll = () => {
+    setQueries([]);
+    setJoins({});
+    setSelectedQuery(null);
+  };
+
   // --- Keep deleteQuery as updated previously (with field resets) ---
   const deleteQuery = useCallback(
     (uuidToDelete: string) => {
@@ -674,6 +682,7 @@ export const BlendContextProvider = ({
         deleteJoin,
         selectQuery, // Pass object-accepting selectQuery
         updateQueryFields, // Pass new function
+        resetAll, // Pass reset function
         validateJoin,
         validateJoins,
         first_query_connection,
