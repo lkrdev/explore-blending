@@ -9,11 +9,11 @@ export const getDefaultConnectionModel = (conn_name: string) => {
 export const getConnectionModel = (
   conn_name: string,
   connnection_config_mapping: ConfigFormData["connection_model_mapping"],
-  single_connection: boolean | undefined,
-  single_connection_model: string | undefined
+  collapse_connection: boolean | undefined,
+  collapse_connection_model_name: string | undefined
 ) => {
-  if (!!single_connection && !!single_connection_model?.length) {
-    return single_connection_model;
+  if (collapse_connection && collapse_connection_model_name?.length) {
+    return collapse_connection_model_name;
   } else {
     const found = connnection_config_mapping?.[conn_name];
     if (found?.model_name && found.model_name.length) {

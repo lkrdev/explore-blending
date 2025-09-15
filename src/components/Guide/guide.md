@@ -14,25 +14,13 @@ There are two modes, one that will use Looker's SQL runner to perform the blendi
 
 > **Note**
 > 
-> *single connection required*
+> *single connection required* (when Universal Connection Mode is disabled)
 >
 > The extension only supports blending explores from the same connection. The connection used is chosen from the first explore. To change the connection you need to reset the user interface
 
 ## Universal Connection Mode
 
-When enabled, the extension operates in a simplified mode where all blended explores must use the same database connection. Instead of mapping each connection to a separate model, you specify a single model name that will be used for all blends. This setting will be infrequently used unless you know that all your Looker connections have access to the same datasets; however it can be very useful if you've set it up this way so you can blend across all connections.
-
-### Configuration
-
-To enable collapse connection mode:
-
-1. Open up the extension settings
-2. Enable "Use LookML" if not already enabled
-3. Under "Connection Mode", select "Universal Connection"
-4. Enter a "Collapse Connection Model Name" (e.g., `blended_explores`)
-5. Save the configuration
-
-When collapse connection mode is disabled, the extension uses "Seperate Connections" mode where each database connection can be mapped to its own model name.
+When Universal Connection Mode is disabled, the extension operates in a simplified mode where all blended explores must use the same database connection. When enabled, instead of mapping each connection to a separate model, you specify a single model name and connection namethat will be used for all blends. This setting will be infrequently used unless you know that all your Looker connections have access to the same datasets; however it can be very useful if you've set it up this way so you can blend across all connections.
 
 ## Dialect Support
 - BigQuery (beta)

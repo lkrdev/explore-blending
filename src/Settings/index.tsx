@@ -112,10 +112,15 @@ const Settings: React.FC<ConfigModalProps> = ({ isOpen, onClose }) => {
     if (values.collapse_connection) {
       if (!values.collapse_connection_model_name?.length) {
         errors.collapse_connection_model_name =
-          "Any Connection Model Name is required";
+          "Universal Connection Model Name is required";
       }
       if (!values.collapse_connection_name?.length) {
-        errors.collapse_connection_name = "Any Connection Name is required";
+        errors.collapse_connection_name =
+          "Universal Connection Name is required";
+      } else if (
+        connections!.find((c) => c.name === values.collapse_connection_name)
+      ) {
+        errors.collapse_connection_name = `Could not find connection ${values.collapse_connection_name}`;
       }
     }
     return errors;
@@ -242,7 +247,7 @@ const Settings: React.FC<ConfigModalProps> = ({ isOpen, onClose }) => {
                             label="Universal Connection Name"
                             required
                             value={values.collapse_connection_name || ""}
-                            defaultValue={connections[0].name || ""}
+                            defaultValue={connections?.[0]?.name || ""}
                             onChange={(e) =>
                               setFieldValue(
                                 "collapse_connection_name",

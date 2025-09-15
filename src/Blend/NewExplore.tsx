@@ -32,7 +32,7 @@ const NewExplore: React.FC = () => {
                 `${explore.label} ${explore.name}`.toLowerCase();
               if (
                 first_query_connection !== model_connections[`${model.name}`] &&
-                !Boolean(config?.collapse_connection)
+                !config?.collapse_connection
               ) {
                 // if its not part of the first connection, don't add it
                 // only do this if collapse connection is not enabled
