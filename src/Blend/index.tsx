@@ -23,6 +23,7 @@ import { BlendContextProvider, useBlendContext } from "./Context";
 import NewExplore from "./NewExplore";
 import NoQueries from "./NoQueries";
 import { QueryList } from "./QueryList";
+import ResetButton from "./ResetButton";
 import SelectedQuery from "./SelectedQuery";
 interface BlendProps {}
 
@@ -48,6 +49,7 @@ const Blend: React.FC<BlendProps> = () => {
             <Space between mb="medium" align="center">
               <Heading as="h3">{APP_NAME}</Heading>
               <Space gap="none" width="fit-content">
+                <ResetButton />
                 <SettingsIconButton />
                 <LearnMoreInfoButton />
               </Space>
