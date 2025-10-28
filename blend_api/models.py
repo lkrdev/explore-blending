@@ -221,7 +221,7 @@ class BlendField(BaseModel):
 
     @property
     def forced_dimension_type(self) -> TDimensionFieldType:
-        if self.type in get_args(TDimensionFieldType):
+        if self.type in (get_args(get_args(TDimensionFieldType)[0]) + get_args(get_args(TDimensionFieldType)[1])):
             return cast(TDimensionFieldType, self.type)
         elif self.type in get_args(TMeasureOnlyFieldType):
             if self.type in [
