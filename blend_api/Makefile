@@ -7,7 +7,10 @@ freeze:
 	uv pip freeze > requirements.txt
 
 dev:
-	uv run functions-framework --target=main --port=9576
+	uv run functions-framework --target=main --port=9576 --debug
+
+dev-tunnel:
+	cloudflared tunnel --url http://localhost:9576
 
 deploy:
 	gcloud functions deploy blend-api \
@@ -17,4 +20,4 @@ deploy:
 		--source=. \
 		--entry-point=main \
 		--trigger-http \
-		--allow-unauthenticated
+		--allow-unauthenticatedww

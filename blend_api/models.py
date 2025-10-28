@@ -1,3 +1,4 @@
+import urllib.parse
 from datetime import datetime, timezone
 from enum import Enum
 from typing import List, Literal, Optional, Set, Union, cast, get_args
@@ -107,6 +108,14 @@ TMeasureOnlyFieldType = Literal[
     "running_total",
     "sum",
     "sum_distinct",
+]
+
+TTableCalculationFieldType = Literal[
+    "percent_of_previous",
+    "percent_of_total",
+    "percentile",
+    "percentile_distinct",
+    "running_total",
 ]
 
 
@@ -221,7 +230,11 @@ class BlendField(BaseModel):
 
     @property
     def forced_dimension_type(self) -> TDimensionFieldType:
-        if self.type in get_args(TDimensionFieldType):
+        # Check if type is in any of the union members
+        if any(
+            self.type in get_args(union_member)
+            for union_member in get_args(TDimensionFieldType)
+        ):
             return cast(TDimensionFieldType, self.type)
         elif self.type in get_args(TMeasureOnlyFieldType):
             if self.type in [
@@ -237,13 +250,7 @@ class BlendField(BaseModel):
                 "count_distinct",
             ]:
                 return "number"
-            elif self.type in [
-                "percent_of_previous",
-                "percent_of_total",
-                "percentile",
-                "percentile_distinct",
-                "running_total",
-            ]:
+            elif self.type in get_args(TTableCalculationFieldType):
                 logger.warning("Invalid measure only field type", type=self.type)
                 return "string"
             else:
@@ -271,6 +278,21 @@ class RequestBody(BaseModel):
     )  # Validates snake_case pattern
     user_commit_comment: str | None = Field(default=None)
     create_measures: bool = Field(default=False)
+
+    @property
+    def explore_base_url(self) -> str:
+        return f"/explore/{self.lookml_model}/{self.name}"
+
+    @property
+    def explore_id(self) -> str:
+        return f"{self.lookml_model}::{self.name}"
+
+    @property
+    def explore_url(self) -> str:
+        query = dict(fields=",".join([x.dimension_name for x in self.fields]))
+        path = self.explore_base_url
+        encoded_params = urllib.parse.urlencode(query)
+        return f"{path}?{encoded_params}"
 
     @property
     def models(self) -> Set[str]:

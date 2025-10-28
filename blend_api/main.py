@@ -21,7 +21,7 @@ def main(request: Request):
         request.headers.get("X-Personal-Access-Token") or PERSONAL_ACCESS_TOKEN
     )
     if not personal_access_token:
-        return "Missing or invalid personal access token", 400
+        return "Missing or invalid personal access token", 200
 
     sdk_client_id = request.headers.get("X-Client-Id")
     sdk_client_secret = request.headers.get("X-Client-Secret")
@@ -63,13 +63,10 @@ def main(request: Request):
         logger.exception("Error committing and deploying")
         return dict(success=False, error=str(e)), 500
 
-    explore_url = f"/explore/{body.lookml_model}/{body.name}"
-    explore_id = f"{body.lookml_model}::{body.name}"
-
     return dict(
         success=True,
-        explore_url=explore_url,
-        explore_id=explore_id,
+        explore_url=body.explore_base_url,
+        explore_id=body.explore_id,
         lookml_model_name=body.lookml_model,
         explore_name=body.name,
     )
