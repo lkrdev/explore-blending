@@ -5,7 +5,7 @@ def test_access_grant():
     access_grant = AccessGrant(
         uuid="test_uuid",
         user_attribute="test_user_attribute",
-        allowed_values=["test_allowed_value"],
+        allowed_values=set(["test_allowed_value"]),
     )
     assert access_grant.name == "access_grant_test_uuid"
     assert (
@@ -29,18 +29,22 @@ def test_body_no_access_grant():
             BlendField(
                 name="kewl_order_items",
                 type="string",
-                alias="kewl_order_items",
                 label_short="Kewl Order Items",
                 view_label="Kewl Order Items",
                 group_label="Kewl Order Items",
                 description="Kewl Order Items",
+                query_uuid="blend_test_uuid",
+                sql_alias="kewl_order_items"
             )
         ],
         sql="select * from kewl_order_items",
-        models={"kewl_order_items"},
         explore_ids={"kewl_order_items"},
         includes="test_includes",
         explore_label="test_explore_label",
+        project_name="test_proj",
+        repo_name="test_repo",
+        connection_name="test_conn",
+        lookml_model="test_model",
     )
     lkml = body.get_lookml(None)
     # Remove the header comments for testing
@@ -57,7 +61,7 @@ view: blend_test_uuid {
   derived_table: {
     sql: select * from kewl_order_items ;;
   }
-  dimension: kewl_order_items {
+  dimension: blend_test_uuid.kewl_order_items {
     label: "Kewl Order Items"
     view_label: "Kewl Order Items"
     group_label: "Kewl Order Items"
@@ -68,6 +72,7 @@ view: blend_test_uuid {
 }
 
 explore: blend_test_uuid {
+  hidden: yes
   label: "test_explore_label"
 }""".strip().split()
     )
@@ -88,7 +93,7 @@ def test_blend_field_dimension_types():
         label_short="Test Count",
         view_label="Test View",
         type="number", # Original type
-        field_type="dimension"
+        field_type="dimension",
     )
     assert field_number.forced_dimension_type == "number", "The 'number' type should be preserved"
 
@@ -129,7 +134,6 @@ def test_get_lookml_with_corrected_dimension_type():
                 label_short="Test Count",
                 view_label="Test View",
                 type="number", # Important: original type
-                field_type="dimension"
             )
         ],
         sql="select 1 as test_count",
