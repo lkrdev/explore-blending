@@ -23,13 +23,13 @@ import useExtensionSdk from "../hooks/useExtensionSdk";
 import useSdk from "../hooks/useSdk";
 import { useSettings } from "../SettingsContext";
 
-interface SeeSqlDialogProps {
+interface BlendDialogProps {
   onClose: () => void;
   handleBlend: () => Promise<void>;
   getQuerySql: () => Promise<string>;
 }
 
-export const SeeSqlDialog: React.FC<SeeSqlDialogProps> = ({
+export const BlendDialog: React.FC<BlendDialogProps> = ({
   onClose,
   handleBlend,
   getQuerySql,
@@ -154,8 +154,8 @@ export const SeeSqlDialog: React.FC<SeeSqlDialogProps> = ({
                   isOpen={copying.value}
                   disableScrollLock // Keep other necessary Popover props
                   placement="left"
-                  // key prop might not be strictly needed if isOpen controls visibility reliably
-                  // key={String(copying.value)}
+                // key prop might not be strictly needed if isOpen controls visibility reliably
+                // key={String(copying.value)}
                 >
                   {/* IconButton is now the child of Popover, Box handles position */}
                   <IconButton
@@ -171,8 +171,8 @@ export const SeeSqlDialog: React.FC<SeeSqlDialogProps> = ({
                     }}
                     // @ts-ignore
                     tooltip="Copy SQL"
-                    // Remove positioning props from IconButton
-                    // style={{ alignSelf: 'flex-start' }} // This style might not be needed on IconButton now
+                  // Remove positioning props from IconButton
+                  // style={{ alignSelf: 'flex-start' }} // This style might not be needed on IconButton now
                   />
                 </Popover>
               </Box>

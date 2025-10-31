@@ -2,9 +2,9 @@ import os
 from typing import cast
 
 import functions_framework
-from functions.get_access_grant import get_access_grant
-from functions.github_commit_and_deploy import github_commit_and_deploy
-from models import AccessGrant, RequestBody
+from .functions.get_access_grant import get_access_grant
+from .functions.github_commit_and_deploy import github_commit_and_deploy
+from .models import AccessGrant, RequestBody
 from structlog import get_logger
 from werkzeug import Request
 
@@ -30,7 +30,7 @@ def main(request: Request):
         return "Missing or invalid sdk base url", 400
     webhook_secret = request.headers.get("X-Webhook-Secret")
 
-    body = RequestBody.model_validate(request.json)
+    body = RequestBody(**request.json if request.json else {})
     if body.create_measures:
         for field in body.fields:
             if field.field_type == "measure":
@@ -63,13 +63,11 @@ def main(request: Request):
         logger.exception("Error committing and deploying")
         return dict(success=False, error=str(e)), 500
 
-    explore_url = f"/explore/{body.lookml_model}/{body.name}"
-    explore_id = f"{body.lookml_model}::{body.name}"
 
     return dict(
         success=True,
-        explore_url=explore_url,
-        explore_id=explore_id,
+        explore_url=body.explore_url,
+        explore_id=body.explore_id,
         lookml_model_name=body.lookml_model,
         explore_name=body.name,
     )

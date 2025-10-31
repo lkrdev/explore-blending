@@ -332,66 +332,6 @@ const Settings: React.FC<ConfigModalProps> = ({ isOpen, onClose }) => {
                           }
                         />
                       )}
-                      <FieldCheckbox
-                        name="remove_branded_loading"
-                        label="Remove Branded Loading"
-                        checked={values.remove_branded_loading}
-                        onChange={(e) =>
-                          setFieldValue(
-                            "remove_branded_loading",
-                            e.target.checked
-                          )
-                        }
-                      />
-                      <FieldCheckbox
-                        name="display_loading_status"
-                        label="Display Loading Status"
-                        checked={values.display_loading_status}
-                        onChange={(e) =>
-                          setFieldValue(
-                            "display_loading_status",
-                            e.target.checked
-                          )
-                        }
-                      />
-                      <Space>
-                        <FieldCheckbox
-                          name="use_cached_model_explore_connections"
-                          label="Use Cached Model Connection"
-                          checked={values.use_cached_model_explore_connections}
-                          onChange={(e) =>
-                            setFieldValue(
-                              "use_cached_model_explore_connections",
-                              e.target.checked
-                            )
-                          }
-                        />
-                        {values.use_cached_model_explore_connections && (
-                          <CachedModelConnectionPopover
-                            cached_model_connection_data={
-                              values.cached_model_connection_data
-                            }
-                            updateModelConnection={(model_connection) => {
-                              const connections = Object.entries(
-                                model_connection
-                              ).reduce((acc, [model, connection]) => {
-                                if (acc[connection]) {
-                                  acc[connection].push(model);
-                                } else {
-                                  acc[connection] = [model];
-                                }
-                                return acc;
-                              }, {} as ModelConnectionCache["values"]);
-                              setFieldValue("cached_model_connection_data", {
-                                values: connections,
-                                expires_at: new Date(
-                                  Date.now() + 1000 * 60 * 60 * 24 * 365 * 10 // 10 years
-                                ).toISOString(),
-                              });
-                            }}
-                          />
-                        )}
-                      </Space>
                       <SpaceVertical gap="xxsmall">
                         <Label>User Commit Comment</Label>
                         <ButtonGroup
@@ -410,7 +350,7 @@ const Settings: React.FC<ConfigModalProps> = ({ isOpen, onClose }) => {
                           <ButtonItem value="id">ID</ButtonItem>
                         </ButtonGroup>
                         {values.user_commit_comment &&
-                        values.user_commit_comment.length > 0 ? (
+                          values.user_commit_comment.length > 0 ? (
                           <CodeBlock border="none">
                             {getUserCommitComment(
                               user,
@@ -458,6 +398,66 @@ const Settings: React.FC<ConfigModalProps> = ({ isOpen, onClose }) => {
                       />
                     </>
                   )}
+                  <Space>
+                    <FieldCheckbox
+                      name="use_cached_model_explore_connections"
+                      label="Use Cached Model Connection"
+                      checked={values.use_cached_model_explore_connections}
+                      onChange={(e) =>
+                        setFieldValue(
+                          "use_cached_model_explore_connections",
+                          e.target.checked
+                        )
+                      }
+                    />
+                    {values.use_cached_model_explore_connections && (
+                      <CachedModelConnectionPopover
+                        cached_model_connection_data={
+                          values.cached_model_connection_data
+                        }
+                        updateModelConnection={(model_connection) => {
+                          const connections = Object.entries(
+                            model_connection
+                          ).reduce((acc, [model, connection]) => {
+                            if (acc[connection]) {
+                              acc[connection].push(model);
+                            } else {
+                              acc[connection] = [model];
+                            }
+                            return acc;
+                          }, {} as ModelConnectionCache["values"]);
+                          setFieldValue("cached_model_connection_data", {
+                            values: connections,
+                            expires_at: new Date(
+                              Date.now() + 1000 * 60 * 60 * 24 * 365 * 10 // 10 years
+                            ).toISOString(),
+                          });
+                        }}
+                      />
+                    )}
+                  </Space>
+                  <FieldCheckbox
+                    name="remove_branded_loading"
+                    label="Remove Branded Loading"
+                    checked={values.remove_branded_loading}
+                    onChange={(e) =>
+                      setFieldValue(
+                        "remove_branded_loading",
+                        e.target.checked
+                      )
+                    }
+                  />
+                  <FieldCheckbox
+                    name="display_loading_status"
+                    label="Display Loading Status"
+                    checked={values.display_loading_status}
+                    onChange={(e) =>
+                      setFieldValue(
+                        "display_loading_status",
+                        e.target.checked
+                      )
+                    }
+                  />
                 </SpaceVertical>
               </DialogContent>
               <DialogFooter>

@@ -321,3 +321,11 @@ explore: {self.name} {{
         out += view
         out += explore
         return out
+
+    @property
+    def explore_url(self) -> str:
+        return f"/explore/{self.lookml_model}/{self.name}"
+
+    @property
+    def explore_id(self) -> str:
+        return f"{self.lookml_model}::{self.name}"

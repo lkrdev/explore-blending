@@ -16,6 +16,7 @@ interface IQuery {
     label: string;
     type: "dimension" | "measure";
   }[];
+  respect_limit?: true
 }
 interface IQueryJoin {
   to_query_id: string;
