@@ -18,14 +18,14 @@ import useSdk from "../hooks/useSdk";
 import { useSearchParams } from "../hooks/useSearchParams";
 import { SettingsIconButton } from "../Settings";
 import { useSettings } from "../SettingsContext";
-import { BlendButton } from "./BlendButton";
+import BlendButton from "./BlendButton";
 import { BlendContextProvider, useBlendContext } from "./Context";
 import NewExplore from "./NewExplore";
 import NoQueries from "./NoQueries";
 import { QueryList } from "./QueryList";
 import ResetButton from "./ResetButton";
 import SelectedQuery from "./SelectedQuery";
-interface BlendProps {}
+interface BlendProps { }
 
 const Blend: React.FC<BlendProps> = () => {
   const { queries, selectedQuery } = useBlendContext();

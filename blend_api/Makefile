@@ -9,6 +9,9 @@ freeze:
 dev:
 	uv run functions-framework --target=main --port=9576
 
+tunnel:
+	cloudflared tunnel --url http://localhost:9576
+
 deploy:
 	gcloud functions deploy blend-api \
 		--gen2 \

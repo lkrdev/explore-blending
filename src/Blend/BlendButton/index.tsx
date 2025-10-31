@@ -1,31 +1,30 @@
 import {
-  Box,
-  Checkbox,
-  Icon,
   IconButton,
   Label,
   Space,
-  Tooltip,
+  SpaceVertical
 } from "@looker/components";
-import { Code, Error } from "@styled-icons/material";
+import { JoinInner } from "@styled-icons/material";
 import { format } from "prettier-sql";
 import React, { useState } from "react";
+import { useTheme } from "styled-components";
 import { useBoolean } from "usehooks-ts";
-import { useAppContext } from "../AppContext";
-import LoadingButton from "../components/ProgressButton";
-import { API_URL, ARTIFACT_NAMESPACE } from "../constants";
-import useExtensionSdk from "../hooks/useExtensionSdk";
-import useSdk from "../hooks/useSdk";
-import { useSearchParams } from "../hooks/useSearchParams";
-import { useSettings } from "../SettingsContext";
-import { getConnectionDialect, getConnectionModel } from "../utils";
-import { useBlendContext } from "./Context";
-import { SeeSqlDialog } from "./SeeSqlDialog";
+import { useAppContext } from "../../AppContext";
+import LoadingButton from "../../components/ProgressButton";
+import { API_URL, ARTIFACT_NAMESPACE } from "../../constants";
+import useExtensionSdk from "../../hooks/useExtensionSdk";
+import useSdk from "../../hooks/useSdk";
+import { useSearchParams } from "../../hooks/useSearchParams";
+import { useSettings } from "../../SettingsContext";
+import { getConnectionDialect, getConnectionModel } from "../../utils";
+import { BlendDialog } from "../BlendDialog";
+import { useBlendContext } from "../Context";
+import BlendButtonProvider, { useBlendButtonContext } from "./BlendButtonContext";
 
 const EXPLORE_POLL_RETRIES = 30;
 const EXPLORE_POLL_DELAY = 2000;
 
-interface BlendButtonProps {}
+interface BlendButtonProps { }
 
 const getExploreLabel = (q: IQuery, f: IExploreField) => {
   if (q.explore.new_label) {
@@ -100,17 +99,15 @@ const getFieldSelectList = (queries: IQuery[], dialect: string) => {
     .join(", ");
 };
 
-export const BlendButton: React.FC<BlendButtonProps> = ({}) => {
+const BlendButton: React.FC<BlendButtonProps> = ({ }) => {
   const {
     queries,
     joins,
     validateJoins,
     first_query_connection,
-    stripLimits,
-    setStripLimits,
   } = useBlendContext();
-  const openDialog = useBoolean(false);
-  const can_blend = queries.length > 1;
+  const { toggle, setToggle, invalid_joins, invalid_joins_text } = useBlendButtonContext()
+  const theme = useTheme();
   const loading = useBoolean(false);
   const sdk = useSdk();
   const extension = useExtensionSdk();
@@ -179,6 +176,7 @@ export const BlendButton: React.FC<BlendButtonProps> = ({}) => {
     // Step 2: Process each raw SQL string
     // --- START: Replace this .reduce() block with the Debugging Version ---
     const query_sql = query_sql_results.reduce((acc, rawSqlResult, i) => {
+      const curr_query = queries[i];
       const queryId = queries[i].query_id; // Get query ID for logging
       console.log(`--- Processing Query Index: ${i}, ID: ${queryId} ---`);
       console.log("Step 0: Raw SQL Result:\n", rawSqlResult);
@@ -214,8 +212,7 @@ export const BlendButton: React.FC<BlendButtonProps> = ({}) => {
       }
 
       // Step 3: Conditional Limit Removal
-      console.log(`Step 3: Checking stripLimits: ${stripLimits}`);
-      if (stripLimits) {
+      if (!curr_query.respect_limit) {
         const sqlBeforeLimitRemoval = processedSql;
         processedSql = processedSql.replace(/LIMIT\s+\d+\s*$/i, "").trim();
         processedSql = processedSql
@@ -261,26 +258,26 @@ export const BlendButton: React.FC<BlendButtonProps> = ({}) => {
     const new_sql = `
 ${b_query_param?.length ? `-- b=${b_query_param}` : ""}
 WITH ${`${queries
-      .map(
-        (q, i) =>
-          // safeQueryForWith wraps the CLEANED SQL in parentheses
-          `${q.uuid} AS ${safeQueryForWith(
-            query_sql[q.uuid as keyof typeof query_sql]
-          )}${i < queries.length - 1 ? "," : ""}`
-      )
-      .join("\n")}`}
+        .map(
+          (q, i) =>
+            // safeQueryForWith wraps the CLEANED SQL in parentheses
+            `${q.uuid} AS ${safeQueryForWith(
+              query_sql[q.uuid as keyof typeof query_sql]
+            )}${i < queries.length - 1 ? "," : ""}`
+        )
+        .join("\n")}`}
 SELECT ${getFieldSelectList(queries, dialect)} FROM ${queries[0].uuid}
 ${queries
-  .slice(1)
-  .map((q) => {
-    const j = joins[q.uuid as keyof typeof joins];
-    if (j) {
-      return getJoinSql(j, dialect);
-    }
-    return null;
-  })
-  .filter(Boolean)
-  .join("\n")}`;
+        .slice(1)
+        .map((q) => {
+          const j = joins[q.uuid as keyof typeof joins];
+          if (j) {
+            return getJoinSql(j, dialect);
+          }
+          return null;
+        })
+        .filter(Boolean)
+        .join("\n")}`;
 
     return format(new_sql, { language: "sql" });
   };
@@ -542,66 +539,32 @@ ${queries
     loading.setFalse();
   };
 
-  const invalid_joins = validateJoins();
-  const invalid_joins_text =
-    invalid_joins.length > 0
-      ? `Invalid joins: ${invalid_joins.map((j) => j.to_query_id).join(", ")}`
-      : "";
-  const disabled = !can_blend || loading.value || invalid_joins.length > 0;
+
   return (
-    // Outer Box - This will now stack the Checkbox row and the Button/Icon row vertically
-
-    <Box width="100%">
-      {/* --- ROW 1: Checkbox + Label --- */}
-      {/* This is the structure that fixed the checkbox alignment */}
-      <Box display="flex" alignItems="center" mb="xsmall">
-        <Checkbox
-          checked={stripLimits}
-          onChange={() => setStripLimits(!stripLimits)}
-          disabled={loading.value}
-          id="stripLimitsCheckbox"
-        />
-        <Label htmlFor="stripLimitsCheckbox">Unlimited Rows</Label>
-      </Box>
-      {/* --- End ROW 1 --- */}
-
-      {/* --- ROW 2: Button + Icons (Aligned together) --- */}
-      {/* Use Space with align="center" to manage this row */}
+    <SpaceVertical width="100%" gap="xsmall">
       {error && <Label>{error}</Label>}
       <Space align="center" gap="small">
         {" "}
-        {/* Align items in THIS row vertically centered */}
         <LoadingButton
           is_loading={loading.value}
-          onClick={handleBlend}
-          disabled={disabled}
+          onClick={() => setToggle("blend")}
         >
           Blend
         </LoadingButton>
         {/* Icons - should now align with the Button in this row */}
         <IconButton
           size="medium"
-          onClick={openDialog.setTrue}
-          disabled={!can_blend || loading.value || invalid_joins.length > 0}
-          icon={<Code size={24} />}
-          label="SQL"
+          onClick={() => setToggle("sql")}
+          icon={<JoinInner color={invalid_joins ? theme.colors.critical : undefined} size={24} />}
+          label={invalid_joins_text}
         />
-        <Tooltip content={invalid_joins_text}>
-          <Icon
-            size="medium"
-            icon={<Error size={24} />}
-            style={{
-              visibility: invalid_joins_text.length ? "visible" : "hidden",
-            }}
-          />
-        </Tooltip>
       </Space>
       {/* --- End ROW 2 --- */}
 
       {/* Dialog remains outside this main layout structure */}
-      {openDialog.value && (
-        <SeeSqlDialog
-          onClose={openDialog.setFalse}
+      {toggle && (
+        <BlendDialog
+          onClose={() => setToggle(false)}
           handleBlend={handleBlend}
           getQuerySql={async () => {
             // ... your async function ...
@@ -617,6 +580,14 @@ ${queries
           }}
         />
       )}
-    </Box> // End Outer vertical Box
+    </SpaceVertical>
   );
 };
+
+const BlendButtonWrapper = () => {
+  return <BlendButtonProvider>
+    <BlendButton />
+  </BlendButtonProvider>
+}
+
+export default BlendButtonWrapper

@@ -1,38 +1,15 @@
 import {
-  Box,
-  Flex,
-  Icon,
-  IconButton,
   List,
-  ListItem,
   Span,
-  Spinner,
-  Tooltip,
+  Spinner
 } from "@looker/components";
-import { CopyAll, Delete } from "@styled-icons/material";
 import uniq from "lodash/uniq";
 import React, { useCallback, useEffect } from "react";
 import { useBoolean } from "usehooks-ts";
 import { useAppContext } from "../../AppContext";
-// Assuming IQuery type is imported or defined globally/elsewhere
-import styled from "styled-components";
 import { useBlendContext } from "../Context"; // Ensure path is correct
+import QueryListItem from "./QueryListItem";
 
-const StyledListItem = styled(ListItem)`
-  &:hover .icon-actions.show {
-    visibility: visible;
-  }
-  &:hover .icon-actions.hide {
-    visibility: hidden;
-  }
-`;
-
-const StyledBox = styled(Box)`
-  min-width: 56px;
-  & .icon-actions {
-    visibility: hidden;
-  }
-`;
 
 /**
  * QueryList Component
@@ -189,144 +166,35 @@ export const QueryList: React.FC = () => {
 
   // --- Component Return JSX ---
   return (
-    <List density={-2} width="100%" style={{ overflow: "auto" }}>
-      {queries.map((query, index) => {
-        // Basic check for valid query object before rendering
-        if (!query || !query.uuid) {
-          console.warn(
-            "QueryList: Skipping render for invalid query object at index",
-            index,
-            query
-          );
-          return null; // Skip rendering this item
-        }
+    <List density={-2} width="100%" style={{ overflowY: "auto" }}>
+      {
+        queries.map((query, index) => {
+          // Basic check for valid query object before rendering
+          if (!query || !query.uuid) {
+            console.warn(
+              "QueryList: Skipping render for invalid query object at index",
+              index,
+              query
+            );
+            return null; // Skip rendering this item
+          }
 
-        const isSelected = selectedQuery?.uuid === query.uuid;
+          const isSelected = selectedQuery?.uuid === query.uuid;
 
-        return (
-          // List Item for each Query
-          <StyledListItem
-            key={query.uuid} // Use guaranteed unique UUID
+          return <QueryListItem
+            key={query.uuid}
+            query={query}
             selected={isSelected}
-            // Select query on click (pass the full object)
-            onClick={() => {
-              if (duplicating.value) return; // Prevent action during duplication
-              selectQuery(query); // Pass the object
-            }}
-            itemRole="listitem"
-            style={{
-              cursor: duplicating.value ? "default" : "pointer", // Indicate clickability
-              userSelect: "none", // Prevent text selection on click
-              // Add visual feedback for selection if needed (border, background)
-              // backgroundColor: isSelected ? 'lightblue' : 'transparent',
-            }}
-          >
-            {/* Flex container for label and icons */}
-            <Flex
-              alignItems="center"
-              justifyContent="space-between"
-              width="100%"
-            >
-              {/* Query Label */}
-              <Span
-                style={{ fontWeight: isSelected ? "bold" : "normal" }}
-                // Add tooltip for long labels if necessary
-                // title={query.explore?.label || `Query ${index + 1}`}
-              >
-                {query.explore?.label || `Query ${index + 1}`}{" "}
-                {` (${query.uuid})`}
-              </Span>
-              <StyledBox>
-                <IconButton
-                  className={`icon-actions ${
-                    queries.length > 1 ? "show" : "hide"
-                  }`}
-                  icon={<Delete />}
-                  label={`Delete Query ${query.explore?.label || index + 1}`}
-                  size="small"
-                  // Hide delete button if only one query exists
-                  // Disable during any duplication process
-                  disabled={duplicating.value}
-                  onClick={(e: React.MouseEvent) => {
-                    e.stopPropagation(); // Prevent ListItem onClick trigger
-                    handleDelete(query.uuid);
-                  }}
-                />
-                {/* Duplicate Button */}
-                <Tooltip content="Duplicate this query">
-                  <IconButton
-                    className="icon-actions show"
-                    // Show spinner when this item is duplicating
-                    icon={
-                      duplicating.value ? (
-                        <Spinner size={16} />
-                      ) : (
-                        <Icon size="medium" icon={<CopyAll size={24} />} />
-                      )
-                    }
-                    label="Duplicate Query"
-                    onClick={(e: React.MouseEvent) => {
-                      e.stopPropagation(); // Prevent ListItem onClick trigger
-                      handleDuplicate(query); // Call updated handler
-                    }}
-                    // Disable if this specific item or any item is duplicating
-                    disabled={duplicating.value}
-                    size="small"
-                  />
-                </Tooltip>
-              </StyledBox>
-              {/* End Action Icons Wrapper */}
-            </Flex>
-            {/* End Flex container */}
-
-            {/* Nested list for fields */}
-            <List density={-3}>
-              {" "}
-              {/* Add some margin if needed */}
-              {/* Check if fields exist and is an array */}
-              {
-                query.fields && Array.isArray(query.fields)
-                  ? query.fields.map((field) => {
-                      // Basic check for valid field object
-                      if (!field || !field.id) return null;
-                      // Get field metadata safely
-                      const field_metadata = query.explore?.id
-                        ? getExploreField(query.explore.id, field.id)
-                        : null;
-                      // Determine color based on type
-                      const itemColor =
-                        field_metadata?.type === "measure"
-                          ? "positive"
-                          : field_metadata?.type === "dimension"
-                          ? "key"
-                          : "text3";
-                      return (
-                        <ListItem
-                          // Ensure key is unique and stable
-                          key={`${query.uuid}-${field.id}`}
-                          itemRole="none" // Semantically not list items if not interactive
-                          style={{ pointerEvents: "none" }} // Not interactive
-                          color={itemColor}
-                          fontSize="small"
-                          // Add title for potential tooltip on hover showing field id
-                          title={field.id}
-                        >
-                          {/* Display label or fallback to ID */}
-                          {field_metadata?.label || field.id}
-                        </ListItem>
-                      );
-                    })
-                  : // Optional: Render something if fields array is empty or missing
-
-                    null // Or render nothing
-              }
-            </List>
-            {/* End Nested list for fields */}
-          </StyledListItem>
-          // End List Item
-        );
-      })}
-    </List>
+            onClick={() => selectQuery(query)}
+            handleDelete={handleDelete}
+            handleDuplicate={handleDuplicate}
+            loading={loading.value}
+            index={index}
+            duplicating={duplicating.value}
+          />
+        })
+      }
+    </List >
   );
   // --- End Component Return ---
 };

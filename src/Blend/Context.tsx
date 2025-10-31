@@ -1,4 +1,5 @@
-import isEqual from "lodash/isEqual";
+import { ILookerConnection } from "@looker/embed-sdk";
+import { findIndex, mergeWith } from "lodash";
 import uniqueId from "lodash/uniqueId";
 import React, {
   createContext,
@@ -41,15 +42,13 @@ interface IBlendContext {
   ) => { exploreId: string; label: string; sourceQuery: IQuery } | null;
   deleteJoin: (to_query_id: string, join_uuid: string) => void;
   // *** Added function to update only fields ***
-  updateQueryFields: (uuid: string, fields: IQuery["fields"]) => void;
-  // *** Reset all queries and joins ***
   resetAll: () => void;
   connection?: string; // Keep if used
   validateJoin: (join: IJoin) => boolean;
   validateJoins: () => IQueryJoin[];
   first_query_connection?: string; // Keep if used
-  stripLimits: boolean;
-  setStripLimits: (strip: boolean) => void;
+  embed_connection: ILookerConnection | null
+  setEmbedConnection: React.Dispatch<React.SetStateAction<ILookerConnection | null>>
 }
 // --- End Interface ---
 
@@ -160,7 +159,7 @@ export const BlendContextProvider = ({
   const [joins, setJoins] = useState<{ [key: string]: IQueryJoin }>(
     blend_data?.joins || {}
   );
-  const [stripLimits, setStripLimits] = useState<boolean>(true);
+  const [embed_connection, setEmbedConnection] = useState<ILookerConnection | null>(null);
   const { setSearchParams } = useSearchParams();
   const { getExploreFields, model_connections, getModelConnection } =
     useAppContext();
@@ -406,90 +405,37 @@ export const BlendContextProvider = ({
     };
   }; // Only depends on queries
 
-  // *** NEW: updateQueryFields function ***
-  const updateQueryFields = useCallback(
-    (uuid: string, fields: IQuery["fields"]) => {
-      console.log(
-        `[BlendContext:updateQueryFields] Updating fields for query UUID: ${uuid}. Field count: ${
-          fields?.length || 0
-        }`
-      );
-      let wasSelected = false; // Flag to check if the updated query was the selected one
-      setQueries((prevQueries) =>
-        prevQueries.map((q) => {
-          if (q.uuid === uuid) {
-            console.log(
-              `[BlendContext:updateQueryFields] Found query ${uuid}, setting fields.`
-            );
-            if (selectedQuery?.uuid === uuid) wasSelected = true; // Check if it was selected before update
-            return { ...q, fields: fields }; // Return updated query object
-          }
-          return q; // Return unchanged query object
-        })
-      );
-      // If the query we just updated WAS the selected query, update selectedQuery state too
-      if (wasSelected) {
-        setSelectedQuery((prevSelected) => {
-          if (prevSelected?.uuid === uuid) {
-            console.log(
-              `[BlendContext:updateQueryFields] Updating selected query fields state.`
-            );
-            // Create new object for selectedQuery state as well
-            return { ...prevSelected, fields: fields };
-          }
-          return prevSelected;
-        });
-      }
-    },
-    [setQueries, selectedQuery, setSelectedQuery]
-  ); // Added selectedQuery and setSelectedQuery dependencies
-
   // *** Ensure selectQuery accepts object ***
-  const selectQuery = useCallback(
-    (queryToSelect: IQuery | null) => {
-      if (queryToSelect && queryToSelect.uuid) {
-        console.log(
-          `[BlendContext:selectQuery] Received query object directly. UUID: ${queryToSelect.uuid}`
-        );
-        setSelectedQuery((prevSelected) => {
-          console.log(
-            `[BlendContext:selectQuery] Current selectedQuery UUID before update: ${prevSelected?.uuid}`
-          );
-          if (isEqual(prevSelected, queryToSelect)) {
-            console.log(
-              `[BlendContext:selectQuery] Query ${queryToSelect.uuid} is already selected.`
-            );
-            return prevSelected;
-          }
-          console.log(
-            `[BlendContext:selectQuery] Calling state setter for UUID: ${queryToSelect.uuid}. State update should be queued.`
-          );
-          return queryToSelect;
-        });
+  const selectQuery = (new_query: IQuery | null) => {
+    setSelectedQuery(prev => {
+      if (!prev) {
+        return new_query;
+      } else if (!new_query) {
+        return prev;
+      } else if (prev.uuid === new_query.uuid) {
+        return prev
       } else {
-        console.warn(
-          `[BlendContext:selectQuery] Received null or invalid query object.`
-        );
-        setSelectedQuery(null);
+        return new_query
       }
-    },
-    [setSelectedQuery]
-  );
+    })
+  }
 
-  // --- Keep updateQuery as originally provided, ensure useCallback if needed ---
-  const updateQuery = useCallback(
-    async (query: IQuery) => {
-      // Using functional update for safety if comparing against previous selectedQuery
-      setSelectedQuery((prevSelectedQuery) => {
-        if (isEqual(prevSelectedQuery, query)) {
-          return prevSelectedQuery; // No change
-        }
-        setQueries((p) => p.map((q) => (q.uuid === query.uuid ? query : q)));
-        return query; // Set the updated query as selected
-      });
-    },
-    [setQueries, setSelectedQuery]
-  ); // Added dependencies
+  const updateQuery = (query: IQuery) => {
+    setQueries(prev => {
+      const new_queries = [...prev]
+      const found = findIndex(new_queries, { uuid: query.uuid })
+      if (found > -1) {
+        mergeWith(new_queries[found], query, (object_value, source_value) => {
+          if (Array.isArray(object_value)) {
+            return source_value;
+          }
+        })
+      } else {
+        new_queries.push(query)
+      }
+      return new_queries
+    })
+  }
 
   const resetAll = () => {
     setQueries([]);
@@ -571,8 +517,7 @@ export const BlendContextProvider = ({
           }
           if (deletedIndex > 0 && deletedIndex <= updatedQueries.length) {
             console.log(
-              `[BlendContext:deleteQuery] Selecting previous query: ${
-                updatedQueries[deletedIndex - 1].uuid
+              `[BlendContext:deleteQuery] Selecting previous query: ${updatedQueries[deletedIndex - 1].uuid
               }`
             );
             return updatedQueries[deletedIndex - 1];
@@ -681,13 +626,12 @@ export const BlendContextProvider = ({
         updateJoinType,
         deleteJoin,
         selectQuery, // Pass object-accepting selectQuery
-        updateQueryFields, // Pass new function
         resetAll, // Pass reset function
         validateJoin,
         validateJoins,
         first_query_connection,
-        stripLimits,
-        setStripLimits,
+        embed_connection,
+        setEmbedConnection
       }}
     >
       {children}
