@@ -1,3 +1,4 @@
+# Threaded user fetching with LIMIT=500 and 5 workers until <500 returned
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Literal, TypedDict, cast
 
@@ -71,8 +72,6 @@ def update_user_attributes(
             raise ValueError(
                 f'User attribute ({user_attribute}) is not an "String Filter (advanced)" user attribute'
             )
-        # Threaded user fetching with LIMIT=500 and 5 workers until <500 returned
-        from concurrent.futures import ThreadPoolExecutor, as_completed
 
         user_limit = 500
         all_users = []
