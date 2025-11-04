@@ -1,11 +1,118 @@
+import os
 from datetime import datetime, timezone
 from enum import Enum
-from typing import List, Literal, Optional, Set, Union, cast, get_args
+from typing import List, Literal, Optional, Self, Set, Union, cast, get_args
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, SecretStr
 from structlog import get_logger
+from werkzeug import Request
 
 logger = get_logger()
+
+TUserAttributeKeys = Literal[
+    "personal_access_token", "client_secret", "webhook_secret", "client_id"
+]
+
+
+class RequestHeaders(BaseModel):
+    host_origin: str | None = Field(default=None, alias="HTTP_X_BASE_URL")
+    webhook_secret: SecretStr | None = Field(
+        default=None, alias="HTTP_X_WEBHOOK_SECRET"
+    )
+    personal_access_token: SecretStr | None = Field(
+        default=None, alias="HTTP_X_PERSONAL_ACCESS_TOKEN"
+    )
+    client_id: str | None = Field(
+        default=None,
+        alias="HTTP_X_CLIENT_ID",
+    )
+    client_secret: SecretStr | None = Field(
+        default=None,
+        alias="HTTP_X_CLIENT_SECRET",
+    )
+
+    @classmethod
+    def from_request(cls, request: Request) -> Self:
+        if hasattr(request, "headers") and hasattr(request.headers, "environ"):
+            c = cls.model_validate(request.headers.environ)
+            c.load_env()
+            return c
+        else:
+            return cls.model_validate({})
+
+    def log(self, type: Literal["info", "warning", "error"]) -> None:
+        logger[type]("request_info", **self.model_dump())
+
+    def unfilled_user_attribute_value(self, key: TUserAttributeKeys) -> str | None:
+        value = getattr(self, key)
+        if value is None:
+            return None
+        if type(value) is SecretStr:
+            value = value.get_secret_value()
+        if not isinstance(value, str):
+            return None
+
+        if value.startswith("{{") and value.endswith("}}"):
+            return value.replace("{{", "").replace("}}", "")
+        else:
+            return None
+
+    @property
+    def unfilled_webhook_secret(self) -> str | None:
+        return self.unfilled_user_attribute_value("webhook_secret")
+
+    @property
+    def unfilled_personal_access_token(self) -> str | None:
+        return self.unfilled_user_attribute_value("personal_access_token")
+
+    @property
+    def unfilled_client_id(self) -> str | None:
+        return self.unfilled_user_attribute_value("client_id")
+
+    @property
+    def unfilled_client_secret(self) -> str | None:
+        return self.unfilled_user_attribute_value("client_secret")
+
+    def load_env(self) -> None:
+        if not self.client_id:
+            self.client_id = os.environ.get("LOOKERSDK_CLIENT_ID")
+        if not self.client_secret:
+            self.client_secret = SecretStr(
+                os.environ.get("LOOKERSDK_CLIENT_SECRET") or ""
+            )
+        if not self.host_origin:
+            self.host_origin = os.environ.get("LOOKERSDK_BASE_URL")
+        if not self.webhook_secret:
+            self.webhook_secret = SecretStr(
+                os.environ.get("LOOKERSDK_WEBHOOK_SECRET") or ""
+            )
+        if not self.personal_access_token:
+            self.personal_access_token = SecretStr(
+                os.environ.get("PERSONAL_ACCESS_TOKEN") or ""
+            )
+
+    def user_attribute_in_value(
+        self,
+        key: Literal[
+            "personal_access_token", "client_secret", "webhook_secret", "client_id"
+        ],
+    ) -> str | None:
+        value = getattr(self, key)
+        if value is None:
+            return None
+        if type(value) is SecretStr:
+            value = value.get_secret_value()
+        if not isinstance(value, str):
+            return None
+
+        if value.startswith("{{"):
+            return value.replace("{{", "").replace("}}", "")
+        return None
+
+    @property
+    def is_valid(self) -> bool:
+        return all(self.model_dump().values())
+
 
 TSharedFieldType = Literal[
     "date",
@@ -159,6 +266,7 @@ class AccessGrant(BaseModel):
 
 class BlendField(BaseModel):
     query_uuid: str
+    query_alias: str
     name: str = Field(
         pattern=r"^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)?$"
     )  # Validates snake_case pattern with zero or one periods
@@ -172,12 +280,16 @@ class BlendField(BaseModel):
     field_type: Literal["dimension", "measure"] = Field(default="dimension")
 
     @property
+    def uuid_or_alias(self) -> str:
+        return self.query_alias if self.query_alias else self.query_uuid
+
+    @property
     def alias(self) -> str:
         return self.name.replace(".", "_")
 
     @property
     def dimension_name(self) -> str:
-        return self.query_uuid + "." + self.alias
+        return self.uuid_or_alias + "." + self.alias
 
     @property
     def sql(self) -> str:
@@ -221,7 +333,9 @@ class BlendField(BaseModel):
 
     @property
     def forced_dimension_type(self) -> TDimensionFieldType:
-        if self.type in {arg for t in get_args(TDimensionFieldType) for arg in get_args(t)}:
+        if self.type in {
+            arg for t in get_args(TDimensionFieldType) for arg in get_args(t)
+        }:
             return cast(TDimensionFieldType, self.type)
         elif self.type in get_args(TMeasureOnlyFieldType):
             if self.type in [
@@ -271,6 +385,8 @@ class RequestBody(BaseModel):
     )  # Validates snake_case pattern
     user_commit_comment: str | None = Field(default=None)
     create_measures: bool = Field(default=False)
+    add_access_grant: bool = Field(default=False)
+    dry_run: bool = Field(default=False)
 
     @property
     def models(self) -> Set[str]:
@@ -321,3 +437,11 @@ explore: {self.name} {{
         out += view
         out += explore
         return out
+
+    @property
+    def explore_url(self) -> str:
+        return f"/explore/{self.lookml_model}/{self.name}"
+
+    @property
+    def explore_id(self) -> str:
+        return f"{self.lookml_model}::{self.name}"

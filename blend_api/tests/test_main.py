@@ -34,7 +34,8 @@ def test_body_no_access_grant():
                 group_label="Kewl Order Items",
                 description="Kewl Order Items",
                 query_uuid="blend_test_uuid",
-                sql_alias="kewl_order_items"
+                sql_alias="kewl_order_items",
+                query_alias="blend_test_uuid",
             )
         ],
         sql="select * from kewl_order_items",
@@ -82,6 +83,7 @@ explore: blend_test_uuid {
     print(expected)
     assert actual == expected
 
+
 def test_blend_field_dimension_types():
     """Checks that forced_dimension_type returns the correct types."""
 
@@ -92,10 +94,13 @@ def test_blend_field_dimension_types():
         sql_alias="test_count",
         label_short="Test Count",
         view_label="Test View",
-        type="number", # Original type
+        type="number",  # Original type
         field_type="dimension",
+        query_alias="q1",
     )
-    assert field_number.forced_dimension_type == "number", "The 'number' type should be preserved"
+    assert field_number.forced_dimension_type == "number", (
+        "The 'number' type should be preserved"
+    )
 
     # Test for 'string' type
     field_string = BlendField(
@@ -104,10 +109,13 @@ def test_blend_field_dimension_types():
         sql_alias="test_name",
         label_short="Test Name",
         view_label="Test View",
-        type="string", # Original type
-        field_type="dimension"
+        type="string",  # Original type
+        field_type="dimension",
+        query_alias="q1",
     )
-    assert field_string.forced_dimension_type == "string", "The 'string' type should be preserved"
+    assert field_string.forced_dimension_type == "string", (
+        "The 'string' type should be preserved"
+    )
 
     # Test for a measure type that should be converted to 'number' for the dimension
     field_measure_as_dim = BlendField(
@@ -116,10 +124,14 @@ def test_blend_field_dimension_types():
         sql_alias="test_sum_value",
         label_short="Test Sum",
         view_label="Test View",
-        type="sum", # Original type (measure)
-        field_type="dimension" # Treated as a dimension in this context
+        type="sum",  # Original type (measure)
+        field_type="dimension",  # Treated as a dimension in this context
+        query_alias="q1",
     )
-    assert field_measure_as_dim.forced_dimension_type == "number", "The 'sum' type should be forced to 'number' as a dimension"
+    assert field_measure_as_dim.forced_dimension_type == "number", (
+        "The 'sum' type should be forced to 'number' as a dimension"
+    )
+
 
 def test_get_lookml_with_corrected_dimension_type():
     """Checks the generated LookML with a field of type 'number'."""
@@ -129,11 +141,12 @@ def test_get_lookml_with_corrected_dimension_type():
         fields=[
             BlendField(
                 query_uuid="q1",
+                query_alias="q1",
                 name="test.count",
                 sql_alias="test_count",
                 label_short="Test Count",
                 view_label="Test View",
-                type="number", # Important: original type
+                type="number",  # Important: original type
             )
         ],
         sql="select 1 as test_count",
@@ -141,7 +154,7 @@ def test_get_lookml_with_corrected_dimension_type():
         project_name="test_proj",
         repo_name="test_repo",
         connection_name="test_conn",
-        lookml_model="test_model"
+        lookml_model="test_model",
     )
 
     lookml_output = body.get_lookml()
@@ -149,4 +162,7 @@ def test_get_lookml_with_corrected_dimension_type():
     # Check that "type: number" is present in the LookML output
     assert "type: number" in lookml_output
     # Also check that "type: string" is NOT used for this field
-    assert "dimension: q1.test_count {\n    label: \"Test Count\"\n    view_label: \"Test View\"\n    group_label: \"\"\n    description: \"\"\n    type: number\n    sql: ${TABLE}.test_count ;;\n  }" in lookml_output
+    assert (
+        'dimension: q1.test_count {\n    label: "Test Count"\n    view_label: "Test View"\n    group_label: ""\n    description: ""\n    type: number\n    sql: ${TABLE}.test_count ;;\n  }'
+        in lookml_output
+    )

@@ -2,7 +2,7 @@ project_name: "project_name"
 
 application: explore_blending {
   label: "Explore Blending (alpha)"
-  url: "https://cdn.lkr.dev/apps/explore-blending/latest/bundle.js"
+  url: "https://localhost:8080/bundle.js"
   file: "bundle.js"
   entitlements: {
     local_storage: yes
@@ -26,12 +26,10 @@ application: explore_blending {
       "connection", 
       "dashboard", 
       "all_connections",
-      "get_artifact",
-      "update_artifacts",
-      "session"
+      "update_artifacts"
     ]
     external_api_urls: [ 
-      "https://www.lkr.dev/apps/explore-blending/api"
+      "https://cloudflare-tunnel-url.trycloudflare.com "
     ]
   }
 }
