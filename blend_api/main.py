@@ -44,7 +44,8 @@ def main(request: Request):
     except Exception as e:
         return ErrorResponse(str(e))
 
-    if request.path == "/update_user_attributes":
+    # user attribute updater endpoint
+    if request.path == "/api/update_user_attributes":
         user_attribute = request.json.get("user_attribute") if request.json else None
         if not headers.host_origin:
             return ErrorResponse("Missing origin of request")
@@ -54,6 +55,14 @@ def main(request: Request):
             return ErrorResponse("Missing Looker Client Secret")
         if not user_attribute:
             return ErrorResponse("Missing User Attribute")
+        if headers.unfilled_client_id:
+            return ErrorResponse(
+                f"Please provide a Looker Client ID in the user attribute ({headers.unfilled_client_id})"
+            )
+        if headers.unfilled_client_secret:
+            return ErrorResponse(
+                f"Please provide a Looker Client Secret in the user attribute ({headers.unfilled_client_secret})"
+            )
         return update_user_attributes(
             sdk_base_url=headers.host_origin,
             sdk_client_id=headers.client_id,
@@ -119,7 +128,7 @@ def main(request: Request):
                     uuid=body.uuid,
                 )
                 if not ag_response["success"]:
-                    return ErrorResponse(ag_response["error"])
+                    return ErrorResponse(ag_response.get("error", "Unknown error"))
                 else:
                     access_grant = cast(AccessGrant, ag_response["access_grant"])
             except Exception as e:

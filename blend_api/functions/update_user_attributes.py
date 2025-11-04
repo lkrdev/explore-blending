@@ -33,8 +33,14 @@ def update_user_by_id(
         )
         return dict(success=True)
     except Exception as e:
-        logger.error("Error getting SDK", error=e)
-        return dict(success=False, error=str(e))
+        logger.error("Error updating user", error=e)
+        return dict(
+            success=False,
+            error=str(e),
+            user_id=looker_user_id,
+            user_attribute_id=user_attribute_id,
+            value=value,
+        )
 
 
 def update_user_attributes(
@@ -50,14 +56,55 @@ def update_user_attributes(
             client_id=sdk_client_id,
             client_secret=sdk_client_secret,
             user_attribute=user_attribute,
-            update_type="group",
+            update_type="user",
+            looker_user_id="-1",
         )
         sdk = cast(Looker40SDK, uau._get_sdk())
+        # check if user attribute is matches advanced string
 
         user_attribute_id = uau._get_user_attribute_id(sdk)
         if not user_attribute_id:
-            raise ValueError("User attribute not found")
-        all_users = sdk.all_users(fields="id,group_ids")
+            raise ValueError(f"User attribute ({user_attribute}) not found")
+
+        attr = sdk.user_attribute(user_attribute_id, "name,label,type")
+        if attr.type != "advanced_filter_string":
+            raise ValueError(
+                f'User attribute ({user_attribute}) is not an "String Filter (advanced)" user attribute'
+            )
+        # Threaded user fetching with LIMIT=500 and 5 workers until <500 returned
+        from concurrent.futures import ThreadPoolExecutor, as_completed
+
+        user_limit = 500
+        all_users = []
+        offset = 0
+
+        def fetch_users(_offset):
+            # Use provided/valid param: "limit", "offset", and correct "sorts"
+            return sdk.search_users(
+                fields="id,group_ids",
+                embed_user=False,
+                is_disabled=False,
+                limit=user_limit,
+                offset=_offset,
+                sorts="id",
+            )
+
+        done = False
+        while not done:
+            offsets = [offset + i * user_limit for i in range(5)]
+            results = []
+            with ThreadPoolExecutor(max_workers=5) as executor:
+                futures = {executor.submit(fetch_users, o): o for o in offsets}
+                for future in as_completed(futures):
+                    batch = future.result()
+                    results.append(batch)
+            flattened = [user for batch in results for user in batch]
+            all_users.extend(flattened)
+            # If any batch had less than user_limit, we're done
+            if any(len(batch) < user_limit for batch in results):
+                done = True
+            else:
+                offset += 5 * user_limit
         all_group_id = set()
         for user in all_users:
             if user.group_ids:
@@ -76,10 +123,11 @@ def update_user_attributes(
                 if group_id in keyed_group
             ]
             try:
+                v = ",".join(filter(lambda x: x is not None, group_ua_value))
                 result = update_user_by_id(
                     user_attribute_id=cast(str, user_attribute_id),
                     looker_user_id=cast(str, user.id),
-                    value=",".join(filter(lambda x: x is not None, group_ua_value)),
+                    value=v,
                     sdk=sdk,
                 )
                 return result
@@ -91,7 +139,7 @@ def update_user_attributes(
                     user_attribute_id=user_attribute_id,
                     group_ua_value=group_ua_value,
                 )
-                return None
+                return dict(user_id=user.id, error=str(e), group_ua_value=v)
 
         with ThreadPoolExecutor(max_workers=25) as executor:
             futures = {executor.submit(update_user, user): user for user in all_users}
@@ -121,5 +169,5 @@ def update_user_attributes(
             erroring_users=erroring_users if erroring_users else None,
         )
     except Exception as e:
-        logger.error("Error getting SDK", error=e)
+        logger.error("Error update_user_attributes", error=e)
         return dict(success=False, error=str(e), erroring_users=None)
