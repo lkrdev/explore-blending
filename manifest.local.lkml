@@ -1,0 +1,35 @@
+project_name: "project_name"
+
+application: explore_blending {
+  label: "Explore Blending (alpha)"
+  url: "https://localhost:8080/bundle.js"
+  file: "bundle.js"
+  entitlements: {
+    local_storage: yes
+    navigation: yes
+    new_window: yes
+    use_form_submit: yes
+    use_embeds: yes
+    use_clipboard: yes
+    core_api_methods: [
+      "me", 
+      "session",
+      "all_lookml_models", 
+      "query", 
+      "lookml_model_explore", 
+      "run_query", 
+      "create_sql_query", 
+      "run_sql_query", 
+      "query_for_slug",
+      "search_dashboards", 
+      "create_dashboard_element", 
+      "connection", 
+      "dashboard", 
+      "all_connections",
+      "update_artifacts"
+    ]
+    external_api_urls: [ 
+      "https://cloudflare-tunnel-url.trycloudflare.com "
+    ]
+  }
+}

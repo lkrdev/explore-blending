@@ -1,3 +1,14 @@
 {
-    "python.analysis.typeCheckingMode": "basic"
+    "python.analysis.typeCheckingMode": "basic",
+    "python.languageServer": "None",
+    "workbench.colorCustomizations": {
+        "activityBar.background": "#08360D",
+        "titleBar.activeBackground": "#0C4B13",
+        "titleBar.activeForeground": "#F3FDF4"
+    },
+    "editor.codeActionsOnSave": {
+        "source.organizeImports": "always"
+    },
+    "ty.inlayHints.variableTypes": false,
+    "makefile.configureOnOpen": false
 }

@@ -4,7 +4,6 @@ import { useBoolean } from "usehooks-ts";
 // Import context
 import { useBlendContext } from "../Context";
 // Import Join component
-import Join from "./Join";
 // Import EmbedExplore component
 import EmbedExplore from "./EmbedExplore";
 // Import the IQueryJoin type definition if available (Optional)
@@ -33,19 +32,9 @@ const SelectedQuery = () => {
 
   return (
     <>
-      {/* --- Render Join component CONDITIONALLY based on index --- */}
-      {/* Only render if explore is not loading AND it's not the first query */}
-      {!exploreLoading.value && shouldRenderJoin && (
-        // Rendering <Join /> without props.
-        // <Join/> MUST now internally handle the case where joins[selectedQuery.uuid] might be undefined
-        // (specifically for the duplicated first query).
-        <Join />
-      )}
-      {/* --- End Conditional Join Rendering --- */}
-
       <Flex height="100%" width="100%">
         <EmbedExplore
-          key={selectedQuery.uuid}
+          // key={selectedQuery.uuid}
           initial_query_id={selectedQuery.query_id}
           explore_id={selectedQuery.explore.id}
           uuid={selectedQuery.uuid}

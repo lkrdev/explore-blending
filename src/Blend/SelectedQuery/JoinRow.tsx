@@ -1,11 +1,13 @@
 import {
-  Box,
   FieldSelect,
+  Grid,
   Icon,
   IconButton,
+  Label,
   SelectOptionGroupProps,
   SelectOptionObject,
-  Tooltip,
+  Space,
+  Tooltip
 } from "@looker/components";
 import { Add, Delete, Error } from "@styled-icons/material";
 import React from "react";
@@ -55,63 +57,63 @@ const JoinRow = ({
   };
   const from_value = [join.from_query_id, join.from_field].join("::");
   const is_valid = validateJoin(join);
+
   return (
-    <Box
-      flexGrow={1}
-      display="flex"
-      flexDirection="row"
-      style={{ gap: "4px", color: "black" }}
+    <Grid
+      columns={3}
+      style={{ gap: "4px", color: "black", gridTemplateColumns: "repeat(2, minmax(0px, 1fr)) auto" }}
+      width={"100%"}
+
     >
+      {index === 0 && <Label>From Query</Label>}
+      {index === 0 && <Label>To Query</Label>}
+      {index === 0 && <Label>{" "}</Label>}
+
       <FieldSelect
         key={[join.from_query_id, join.from_field].join("::")}
-        label={index === 0 ? "From Field" : undefined}
         options={from_fields}
         value={from_value.length > 2 ? from_value : ""}
         onChange={handleFromFieldChange}
       />
       <FieldSelect
         key={join.to_field}
-        label={index === 0 ? "To Field" : undefined}
         options={to_fields}
         value={join.to_field}
         onChange={handleToFieldChange}
       />
-      <IconButton
-        label="Delete Join"
-        icon={<Delete fontSize={16} color="black" />}
-        style={{
-          alignSelf: "center",
-          marginBottom: index === 0 ? "-18px" : "0px",
-          visibility: join_length > 1 ? "visible" : "hidden",
-        }}
-        onClick={() => {
-          deleteJoin(join.to_query_id, join.uuid);
-        }}
-      />
-      <IconButton
-        label="Add Join"
-        icon={<Add fontSize={16} color="black" />}
-        style={{
-          alignSelf: "center",
-          marginBottom: index === 0 ? "12px" : "0px",
-          visibility: is_last ? "visible" : "hidden",
-        }}
-        disabled={!is_valid}
-        onClick={() => {
-          newJoin("", query.uuid, "", "", join_type);
-        }}
-      />
-      <Tooltip content="Invalid joins, please select fields">
-        <Icon
+      <Space>
+        <IconButton
+          label="Delete Join"
+          icon={<Delete fontSize={16} color="black" />}
           style={{
-            alignSelf: "center",
-            marginBottom: index === 0 ? (is_last ? "12px" : "-18px") : "0px",
-            visibility: !is_valid ? "visible" : "hidden",
+            visibility: join_length > 1 ? "visible" : "hidden",
           }}
-          icon={<Error fontSize={16} color="red" />}
+          onClick={() => {
+            deleteJoin(join.to_query_id, join.uuid);
+          }}
         />
-      </Tooltip>
-    </Box>
+        <IconButton
+          label="Add Join"
+          icon={<Add fontSize={16} color="black" />}
+          style={{
+            // marginBottom: index === 0 ? "12px" : "0px",
+            visibility: is_last ? "visible" : "hidden",
+          }}
+          disabled={!is_valid}
+          onClick={() => {
+            newJoin("", query.uuid, "", "", join_type);
+          }}
+        />
+        <Tooltip content="Invalid joins, please select fields">
+          <Icon
+            style={{
+              visibility: !is_valid ? "visible" : "hidden",
+            }}
+            icon={<Error fontSize={16} color="red" />}
+          />
+        </Tooltip>
+      </Space>
+    </Grid>
   );
 };
 

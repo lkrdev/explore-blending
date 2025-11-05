@@ -6,8 +6,9 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "functions-framework>=3.8.2",
+    "lkr-dev-cli>=0.0.32",
     "looker-sdk>=25.4.0",
-    "pydantic==2.10.6",
+    "pydantic>=2.10.6",
     "pygithub>=2.6.1",
     "structlog>=25.2.0",
 ]
