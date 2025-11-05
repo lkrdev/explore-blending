@@ -25,7 +25,7 @@ interface IQueryListItem {
     duplicating: boolean;
     query: IQuery;
     index: number;
-    handleDelete: (uuid: string) => void;
+    handleDelete: () => void;
     handleDuplicate: (query: IQuery) => void;
     loading: boolean;
 }
@@ -150,7 +150,7 @@ const QueryListItem: React.FC<IQueryListItem> = ({
                         onClick={(e: React.MouseEvent) => {
                             e.stopPropagation();
                             e.preventDefault();
-                            handleDelete(query.uuid);
+                            handleDelete();
                         }}
                     />
                     <IconButton

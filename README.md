@@ -1,5 +1,11 @@
 # Explore Blending
 
+This is an early version of a Looker extension that allows explore users to blend explores together, choose join paths, and perform custom calculations (custom dimensions, custom measures and table calculations) on top of the result. It's an alternative version of merge results that lets an end user do joins on the full explore queries. Explore blending lets you take any number of Looker explore queries and join them together in the database. It's like merge results beyond just a simple in-memory engine. There are two main modes, SQL and LookML modes, we highly recommend using the LookML mode as it provides the most functionality, however any user with SQL Runner access can test out the functionality with the SQL model
+
+## How it works
+
+## Use cases
+
 ## Try it Now
 
 -   If you have `sql_runner` permissions in Looker, you can test this extension with no configuration. Add this into any `manifest.lkml` file within any of your LookML projects

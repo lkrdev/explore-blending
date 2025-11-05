@@ -458,6 +458,7 @@ export const BlendContextProvider = ({
         setQueries([]);
         setJoins({});
         setSelectedQuery(null);
+        embed_connection?.preload();
     };
 
     // --- Keep deleteQuery as updated previously (with field resets) ---
