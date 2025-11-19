@@ -7,7 +7,7 @@ import {
     SpaceVertical,
     Span,
 } from '@looker/components';
-import { forEach, set, uniq, uniqueId } from 'lodash';
+import { forEach, get, set, uniq, uniqueId } from 'lodash';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useBoolean } from 'usehooks-ts';
 import { useAppContext } from '../AppContext';
@@ -32,36 +32,36 @@ const Blend: React.FC<BlendProps> = () => {
     const { queries, selectedQuery } = useBlendContext();
 
     return (
-        <Box height="100%" width="100%" overflow="hidden" display="flex">
+        <Box height='100%' width='100%' overflow='hidden' display='flex'>
             {/* Sidebar */}
             {queries.length > 0 && (
                 <SpaceVertical
-                    gap="none"
+                    gap='none'
                     width={300}
-                    height="100%"
-                    p="small"
+                    height='100%'
+                    p='small'
                     style={{ borderRight: '1px solid #e1e1e1' }}
                 >
                     <SpaceVertical
-                        gap="small"
-                        justify="start"
+                        gap='small'
+                        justify='start'
                         style={{ height: '100%', minHeight: 0 }}
                     >
-                        <Space between mb="medium" align="center">
-                            <Heading as="h3">
+                        <Space between mb='medium' align='center'>
+                            <Heading as='h3'>
                                 {config?.use_extension_label
                                     ? window.lookerExtensionMetadata.label
                                     : APP_NAME}
                             </Heading>
-                            <Space gap="none" width="fit-content">
+                            <Space gap='none' width='fit-content'>
                                 <ResetButton />
                                 <SettingsIconButton />
                                 <LearnMoreInfoButton />
                             </Space>
                         </Space>
                         <SpaceVertical
-                            gap="small"
-                            width="100%"
+                            gap='small'
+                            width='100%'
                             style={{ minHeight: 0 }}
                         >
                             <QueryList />
@@ -74,7 +74,7 @@ const Blend: React.FC<BlendProps> = () => {
             )}
 
             {/* Main Content */}
-            <Box flex={1} height="100%" position="relative">
+            <Box flex={1} height='100%' position='relative'>
                 {queries.length === 0 && <NoQueries />}
                 {queries.length > 0 && Boolean(selectedQuery?.uuid) && (
                     <SelectedQuery />
@@ -122,19 +122,19 @@ const BlendBase: React.FC = () => {
             return;
         } else {
             const blend_data_json: IBlendQueryOutput = JSON.parse(
-                atob(blend_data)
+                atob(blend_data),
             ) as IBlendQueryOutput;
             const query_promises = blend_data_json.queries.map(
                 async (query_id: string) => {
                     return sdk.ok(sdk.query(query_id));
-                }
+                },
             );
             const query_responses = await Promise.all(query_promises);
             const explores_ids = uniq(
-                query_responses.map((q) => `${q.model}::${q.view}`)
+                query_responses.map((q) => `${q.model}::${q.view}`),
             );
             const _explore_fields = await Promise.all(
-                explores_ids.map(getExploreFields)
+                explores_ids.map(getExploreFields),
             );
             const fields = _explore_fields.reduce((acc, explore_fields, i) => {
                 const explore_id = explores_ids[i];
@@ -146,7 +146,7 @@ const BlendBase: React.FC = () => {
                 const explore_id = `${q.model}::${q.view}`;
                 const explore = explores[explore_id];
                 const query_fields = (q.fields || []).map(
-                    (f) => fields[explore_id][f]
+                    (f) => fields[explore_id][f],
                 );
 
                 if (!explore) {
@@ -161,7 +161,7 @@ const BlendBase: React.FC = () => {
                             label: explore.label,
                         },
                         fields: query_fields,
-                        alias: blend_data_json.aliases[k],
+                        alias: get(blend_data_json, ['aliases', k], undefined),
                     };
                     acc.push(item);
                 }
@@ -172,7 +172,7 @@ const BlendBase: React.FC = () => {
                 set(
                     queries,
                     [value, 'explore', 'new_label'],
-                    blend_data_json.new_explore_labels[index]
+                    blend_data_json.new_explore_labels[index],
                 );
             });
             forEach(blend_data_json.a_i, (value, index) => {
@@ -215,29 +215,29 @@ const BlendBase: React.FC = () => {
         const can_display_loading = Boolean(config);
         return (
             <Box
-                display="grid"
+                display='grid'
                 style={{
                     gridTemplateRows: '0.75fr fit-content(100%) 1fr',
                 }}
-                height="100%"
-                width="100%"
+                height='100%'
+                width='100%'
             >
                 <Box />
                 {can_display_loading && config?.display_loading_status ? (
-                    <Box margin="0 auto" p="medium">
+                    <Box margin='0 auto' p='medium'>
                         <LkrLoading duration={750} />
                     </Box>
                 ) : (
-                    <Box margin="0 auto" p="medium">
-                        <ProgressCircular size="large" />
+                    <Box margin='0 auto' p='medium'>
+                        <ProgressCircular size='large' />
                     </Box>
                 )}
                 <SpaceVertical
-                    gap="none"
+                    gap='none'
                     flexGrow={1}
-                    textAlign="center"
-                    justify="start"
-                    align="center"
+                    textAlign='center'
+                    justify='start'
+                    align='center'
                 >
                     {config?.display_loading_status &&
                         status.map((s, i) => (
@@ -259,8 +259,8 @@ const FoldInStatus: React.FC<{ children: React.ReactNode }> = ({
     children,
 }) => {
     return (
-        <FadeIn delay="intricate" duration="intricate">
-            <Span fontSize="xxsmall">{children}</Span>
+        <FadeIn delay='intricate' duration='intricate'>
+            <Span fontSize='xxsmall'>{children}</Span>
         </FadeIn>
     );
 };

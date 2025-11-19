@@ -45,8 +45,7 @@ export const BlendDialog: React.FC<BlendDialogProps> = ({
     handleBlend,
 }) => {
     const sdk = useSdk();
-    const { toggle, loading, setToggle, invalid_joins, invalid_joins_text } =
-        useBlendButtonContext();
+    const { toggle, loading, invalid_joins } = useBlendButtonContext();
     const { config } = useSettings();
 
     const workspace = useSWR('workspace', () => {

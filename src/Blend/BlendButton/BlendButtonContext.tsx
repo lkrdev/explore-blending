@@ -19,13 +19,13 @@ export const useBlendButtonContext = () => {
     const ctx = useContext(BlendButtonContext);
     if (!ctx)
         throw new Error(
-            'useBlendButtonContext must be used within a BlendButtonProvider'
+            'useBlendButtonContext must be used within a BlendButtonProvider',
         );
     return ctx;
 };
 
 const BlendButtonProvider = ({ children }: { children: React.ReactNode }) => {
-    const [toggle, setToggle] = useState<TToggle>('sql');
+    const [toggle, setToggle] = useState<TToggle>(false);
     const loading = useBoolean(false);
     const { validateJoins, queries } = useBlendContext();
     const can_blend = queries.length > 1;
