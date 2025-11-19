@@ -54,7 +54,7 @@ export const BlendDialog: React.FC<BlendDialogProps> = ({
     });
 
     return (
-        <Dialog isOpen={true} width="60vw" onClose={onClose} height="90vh">
+        <Dialog isOpen={true} width='60vw' onClose={onClose} height='90vh'>
             <StyledDialogHeader>
                 <TabsComponent />
             </StyledDialogHeader>
@@ -65,32 +65,31 @@ export const BlendDialog: React.FC<BlendDialogProps> = ({
             </StyledDialogContent>
 
             <DialogFooter>
-                <SpaceVertical gap="small">
-                    {error && <Label color="critical">{error}</Label>}
+                <SpaceVertical gap='small'>
+                    {error && <Label color='critical'>{error}</Label>}
                     {invalid_joins.length > 0 && (
-                        <Label color="critical">
+                        <Label color='critical'>
                             Please fix your invalid joins
                         </Label>
                     )}
-                    <Space between justify="end">
+                    <Space between justify='end'>
                         <LoadingButton
                             fullWidth
                             is_loading={loading.value}
                             disabled={loading.value || invalid_joins.length > 0}
-                            color="key"
+                            color='key'
                             onClick={async () => {
                                 loading.setTrue();
                                 await handleBlend();
                                 onClose();
                                 loading.setFalse();
-                                setToggle(false);
                             }}
                         >
                             Blend
                         </LoadingButton>
                         {workspace?.data?.workspace_id === 'dev' &&
                         config?.lookml ? (
-                            <Tooltip content="It is not recommended to blend in development mode, your developer copy may not have the new LookML model created">
+                            <Tooltip content='It is not recommended to blend in development mode, your developer copy may not have the new LookML model created'>
                                 <Icon icon={<Warning size={24} />} />
                             </Tooltip>
                         ) : null}

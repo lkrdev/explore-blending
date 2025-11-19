@@ -87,7 +87,6 @@ const Lookml = ({ display = true }: { display?: boolean }) => {
             <SpaceVertical>Error: {JSON.stringify(lookml.error)}</SpaceVertical>
         );
     } else if (!lookml.data?.success) {
-        debugger;
         let lookml_data = lookml.data?.lookml;
         if (!lookml_data) {
             lookml_data = '-- No LookML generated --';

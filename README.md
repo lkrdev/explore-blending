@@ -8,7 +8,7 @@ The Explore Blending application is an early version of a Looker extension that 
 
 ## Try it Now
 
-- If you have `sql_runner` permissions in Looker, you can test this extension with no configuration. Add this to any `manifest.lkml` file within any of your LookML projects
+-   If you have `sql_runner` permissions in Looker, you can test this extension with no configuration. Add this to any `manifest.lkml` file within any of your LookML projects
 
 ```
 application: explore_blending {
@@ -60,13 +60,13 @@ application: explore_blending {
 
 API Credentials required
 
-- Recommended to use the Hide Values yes with the API credential, user attributes, and a domain allowlist
-- * `https://www.lkr.dev/apps/explore-blending/*` or https://your.override.api/\*
+-   Recommended to use the Hide Values yes with the API credential, user attributes, and a domain allowlist
+-   -   `https://www.lkr.dev/apps/explore-blending/*` or https://your.override.api/*
 
 ## Hosting this yourself
 
 ## Versioning
 
-If you are using the lkr.dev blend\_api (happens by default), but want to pin yourself to a particular version of the frontend and backend, you can use a JavaScript URL in your manifest of a specific version of the extension and an `override_api` in your config.
+If you are using the lkr.dev blend_api (happens by default), but want to pin yourself to a particular version of the frontend and backend, you can use a JavaScript URL in your manifest of a specific version of the extension and an `override_api` in your config.
 
 ### Using override API
