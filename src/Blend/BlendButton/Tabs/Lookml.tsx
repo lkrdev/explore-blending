@@ -1,4 +1,4 @@
-import { Box, Code } from '@looker/components';
+import { Box, Code, Paragraph, SpaceVertical } from '@looker/components';
 import { set } from 'lodash';
 import React, { useState } from 'react';
 import useSWR from 'swr';
@@ -14,12 +14,12 @@ var stringify = require('fast-stable-stringify');
 
 const Lookml = ({ display = true }: { display?: boolean }) => {
     const [status, setStatus] = useState<{ message: string; done: boolean }[]>(
-        []
+        [],
     );
     const { queries, joins, first_query_connection } = useBlendContext();
     const sdk = useSdk();
     const extension = useExtensionSdk();
-    const { config, getUserCommitComment } = useSettings();
+    const { config, getUserCommitComment, can_update_settings } = useSettings();
     const { search_params } = useSearchParams();
     const { getExploreField, user } = useAppContext();
     const { lookerHostData } = extension;
@@ -27,12 +27,12 @@ const Lookml = ({ display = true }: { display?: boolean }) => {
 
     const addStatus = (
         status: keyof typeof STATUS_MESSAGES,
-        done: boolean = false
+        done: boolean = false,
     ) => {
         setStatus((p) => {
             const new_p = [...p];
             const index = new_p.findIndex(
-                (s) => s.message === STATUS_MESSAGES[status]
+                (s) => s.message === STATUS_MESSAGES[status],
             );
             if (index > -1) {
                 set(new_p, index, { message: STATUS_MESSAGES[status], done });
@@ -63,21 +63,31 @@ const Lookml = ({ display = true }: { display?: boolean }) => {
                 add_access_grant: config?.access_grants || false,
                 addStatus: addStatus,
             });
-        }
+        },
     );
+
     if (!display) return null;
-    if (lookml.isLoading || status.some((s) => !s.done)) {
+    if (!first_query_connection) {
         return (
             <div>
-                Generating LookML...{' '}
-                {status
-                    .map((s) => `${s.message} ${s.done ? '✓' : '✗'}`)
-                    .join('\n')}
+                No connection found for the first query, may need to reset model
+                cache within the Explore blend settings.
+                {!can_update_settings &&
+                    'Please reach out to your administrator to update the settings.'}
             </div>
         );
+    } else if (lookml.isLoading) {
+        return (
+            <SpaceVertical>
+                <Paragraph>Generating LookML... </Paragraph>
+            </SpaceVertical>
+        );
     } else if (lookml.error) {
-        return <div>Error: {JSON.stringify(lookml.error)}</div>;
+        return (
+            <SpaceVertical>Error: {JSON.stringify(lookml.error)}</SpaceVertical>
+        );
     } else if (!lookml.data?.success) {
+        debugger;
         let lookml_data = lookml.data?.lookml;
         if (!lookml_data) {
             lookml_data = '-- No LookML generated --';
@@ -86,24 +96,30 @@ const Lookml = ({ display = true }: { display?: boolean }) => {
             }
         }
         return (
-            <Box position="relative" height="100%" width="100%">
+            <Box position='relative' height='100%' width='100%'>
+                {lookml_data}
+            </Box>
+        );
+    } else if (lookml.data?.success) {
+        return (
+            <Box position='relative' height='100%' width='100%'>
                 <CopyClipboard
-                    text={lookml_data}
-                    label="Copy LookML"
+                    text={lookml.data!.lookml!}
+                    label='Copy LookML'
                     size={16}
                 />
 
                 <Code
-                    fontSize="xxsmall"
+                    fontSize='xxsmall'
                     style={{
                         height: '100%',
                         width: '100%',
                         overflow: 'auto',
                         whiteSpace: 'pre-wrap',
                     }}
-                    lang="sql"
+                    lang='sql'
                 >
-                    {lookml_data}
+                    {lookml.data!.lookml!}
                 </Code>
             </Box>
         );

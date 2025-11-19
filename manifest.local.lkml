@@ -1,7 +1,7 @@
 project_name: "project_name"
 
 application: explore_blending {
-  label: "Explore Blending (alpha)"
+  label: "Explore Blending (local)"
   url: "https://localhost:8080/bundle.js"
   file: "bundle.js"
   entitlements: {

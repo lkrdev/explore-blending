@@ -10,5 +10,24 @@
         "source.organizeImports": "always"
     },
     "ty.inlayHints.variableTypes": false,
-    "makefile.configureOnOpen": false
+    "makefile.configureOnOpen": false,
+    "prettier.enable": true,
+    "prettier.trailingComma": "all",
+    "prettier.singleQuote": true,
+    "prettier.printWidth": 80,
+    "prettier.tabWidth": 4,
+    "prettier.useTabs": false,
+    "prettier.semi": true,
+    "prettier.bracketSpacing": true,
+    "prettier.arrowParens": "always",
+    "prettier.endOfLine": "lf",
+    "prettier.quoteProps": "as-needed",
+    "prettier.jsxSingleQuote": true,
+    "editor.formatOnSave": true,
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.codeActionsOnSave": {
+        "source.organizeImports": "always",
+        "source.fixAll.prettier": "always",
+        "source.removeUnusedImports": "always"
+    }
 }

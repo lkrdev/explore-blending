@@ -1,17 +1,18 @@
 import {
-    Box,
     Dialog,
     DialogContent,
     DialogFooter,
     DialogHeader,
-    Icon, // Ensure Popover is imported
+    Icon,
+    Label, // Ensure Popover is imported
     Space,
+    SpaceVertical,
     Tooltip,
 } from '@looker/components';
 import { Warning } from '@styled-icons/material';
-import React, { useEffect, useState } from 'react';
+import React from 'react';
+import styled from 'styled-components';
 import useSWR from 'swr';
-import { useBoolean } from 'usehooks-ts';
 import LoadingButton from '../../components/ProgressButton'; // Assuming LoadingButtonProps requires is_loading
 import useSdk from '../../hooks/useSdk';
 import { useSettings } from '../../SettingsContext';
@@ -19,64 +20,70 @@ import { useBlendButtonContext } from './BlendButtonContext';
 import TabsComponent, { SelectedTabComponent } from './Tabs';
 import Lookml from './Tabs/Lookml';
 
+const StyledDialogContent = styled(DialogContent)`
+    padding: ${({ theme }) => theme.space.none}
+        ${({ theme }) => theme.space.xsmall};
+    margin-bottom: ${({ theme }) => theme.space.medium};
+`;
+
+const StyledDialogHeader = styled(DialogHeader)`
+    padding: ${({ theme }) => theme.space.xsmall}
+        ${({ theme }) => theme.space.xsmall};
+`;
+
 interface BlendDialogProps {
+    error: string | undefined;
+    setError: React.Dispatch<React.SetStateAction<string | undefined>>;
     onClose: () => void;
     handleBlend: () => Promise<void>;
-    getQuerySql: () => Promise<string>;
 }
 
 export const BlendDialog: React.FC<BlendDialogProps> = ({
+    error,
+    setError,
     onClose,
     handleBlend,
-    getQuerySql,
 }) => {
-    const { toggle } = useBlendButtonContext();
-    const [sql, setSql] = useState<string | undefined>();
     const sdk = useSdk();
+    const { toggle, loading, setToggle, invalid_joins, invalid_joins_text } =
+        useBlendButtonContext();
     const { config } = useSettings();
 
     const workspace = useSWR('workspace', () => {
         return sdk.ok(sdk.session());
     });
 
-    useEffect(() => {
-        getSql();
-    }, []);
-
-    const getSql = async () => {
-        const sql = await getQuerySql();
-        setSql(sql);
-    };
-
-    const loading = typeof sql === 'undefined';
-    const loading_button = useBoolean(false);
-
     return (
         <Dialog isOpen={true} width="60vw" onClose={onClose} height="90vh">
-            <DialogHeader>
+            <StyledDialogHeader>
                 <TabsComponent />
-            </DialogHeader>
-            <DialogContent>
+            </StyledDialogHeader>
+            <StyledDialogContent>
                 {SelectedTabComponent[toggle || 'queries']}
                 {/* preload lookml */}
                 <Lookml display={false} />
-            </DialogContent>
+            </StyledDialogContent>
 
             <DialogFooter>
-                <Box display="flex" justifyContent="flex-end" width="100%">
-                    <Space between>
-                        {/* Blend Button - Add is_loading prop back */}
+                <SpaceVertical gap="small">
+                    {error && <Label color="critical">{error}</Label>}
+                    {invalid_joins.length > 0 && (
+                        <Label color="critical">
+                            Please fix your invalid joins
+                        </Label>
+                    )}
+                    <Space between justify="end">
                         <LoadingButton
                             fullWidth
-                            is_loading={loading_button.value} // *** FIX: Add this prop back ***
-                            disabled={loading_button.value || loading}
+                            is_loading={loading.value}
+                            disabled={loading.value || invalid_joins.length > 0}
                             color="key"
-                            // flexGrow={false} // Keep other props if needed
                             onClick={async () => {
-                                loading_button.setTrue();
+                                loading.setTrue();
                                 await handleBlend();
                                 onClose();
-                                loading_button.setFalse();
+                                loading.setFalse();
+                                setToggle(false);
                             }}
                         >
                             Blend
@@ -88,7 +95,7 @@ export const BlendDialog: React.FC<BlendDialogProps> = ({
                             </Tooltip>
                         ) : null}
                     </Space>
-                </Box>
+                </SpaceVertical>
             </DialogFooter>
         </Dialog>
     );
