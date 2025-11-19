@@ -9,7 +9,8 @@
         "dev:https": "NODE_ENV=development webpack serve --server-type https --hot --mode development --config webpack.dev.js",
         "prebuild": "npx tsx scripts/generate-entitlements.ts",
         "build": "NODE_ENV=production webpack --mode production",
-        "dev": "NODE_ENV=development webpack serve --mode development --config webpack.dev.js"
+        "dev": "NODE_ENV=development webpack serve --mode development --config webpack.dev.js",
+        "test": "jest"
     },
     "keywords": [],
     "dependencies": {
@@ -37,6 +38,7 @@
         "@babel/preset-env": "^7.26.9",
         "@babel/preset-react": "^7.26.3",
         "@babel/preset-typescript": "^7.27.0",
+        "@jest/globals": "^29.7.0",
         "@pmmmwh/react-refresh-webpack-plugin": "^0.5.16",
         "@types/lodash": "^4.17.20",
         "@types/react": "^17.0.85",
@@ -49,6 +51,7 @@
         "raw-loader": "^4.0.2",
         "react-refresh": "^0.17.0",
         "style-loader": "^4.0.0",
+        "ts-jest": "^29.4.5",
         "typescript": "^5.8.3",
         "webpack": "^5.67.0",
         "webpack-cli": "5.1.4",

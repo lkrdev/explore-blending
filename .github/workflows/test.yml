@@ -6,7 +6,7 @@ on:
       - main
 
 jobs:
-  test:
+  python-tests:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -21,7 +21,18 @@ jobs:
         working-directory: blend_api
         run: uv sync --dev
 
-      - name: Run tests
+      - name: Run python tests
         working-directory: blend_api
         run: make test
 
+  node-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run node tests
+        run: npm run test

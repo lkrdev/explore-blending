@@ -10,6 +10,7 @@ interface IBlendButtonContext {
     invalid_joins: IQueryJoin[];
     invalid_joins_text: string;
     disabled: boolean;
+    loading: ReturnType<typeof useBoolean>;
 }
 
 const BlendButtonContext = createContext<IBlendButtonContext>({} as any);
@@ -24,7 +25,7 @@ export const useBlendButtonContext = () => {
 };
 
 const BlendButtonProvider = ({ children }: { children: React.ReactNode }) => {
-    const [toggle, setToggle] = useState<TToggle>(false);
+    const [toggle, setToggle] = useState<TToggle>('sql');
     const loading = useBoolean(false);
     const { validateJoins, queries } = useBlendContext();
     const can_blend = queries.length > 1;
@@ -44,6 +45,7 @@ const BlendButtonProvider = ({ children }: { children: React.ReactNode }) => {
                 invalid_joins,
                 invalid_joins_text,
                 disabled,
+                loading,
             }}
         >
             {children}

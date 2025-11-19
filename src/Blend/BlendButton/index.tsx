@@ -27,8 +27,7 @@ const BlendButton: React.FC<BlendButtonProps> = ({}) => {
     const [status, setStatus] = useState<{ message: string; done: boolean }[]>(
         []
     );
-    const { queries, joins, validateJoins, first_query_connection } =
-        useBlendContext();
+    const { queries, joins, first_query_connection } = useBlendContext();
     const { toggle, setToggle, invalid_joins, invalid_joins_text } =
         useBlendButtonContext();
     const theme = useTheme();
@@ -143,9 +142,10 @@ const BlendButton: React.FC<BlendButtonProps> = ({}) => {
             </Space>
             {toggle && (
                 <BlendDialog
+                    error={error}
+                    setError={setError}
                     onClose={() => setToggle(false)}
                     handleBlend={handleBlendWrapper}
-                    getQuerySql={() => Promise.resolve({} as any)}
                 />
             )}
         </SpaceVertical>

@@ -2,6 +2,195 @@ import { Looker40SDK } from '@looker/sdk';
 import { format } from 'prettier-sql';
 import { getConnectionDialect } from '.';
 import { STATUS_MESSAGES } from './getBlend';
+import { getPDTMeta, replaceSelectWithPdtView } from './getPDTMeta';
+
+declare global {
+    interface String {
+        tw(): string;
+    }
+}
+
+String.prototype.tw = function () {
+    const text = this.split('\n');
+    const regex = /\s+/g;
+    let trimmed = text.reduce((acc, l) => {
+        const trimmed = l.trim().replace(regex, ' ');
+        if (trimmed?.length) {
+            acc.push(trimmed);
+        }
+        return acc;
+    }, [] as string[]);
+    return trimmed.join('\n');
+};
+
+export class SQLParser {
+    sql: string;
+    parsed: {
+        pdts: string[];
+        total: string;
+        row_totals: string;
+        grand_total: string;
+        pivot: string;
+        select: string;
+    };
+    constructor(sql: string) {
+        this.sql = this.cleanSql(sql);
+        this.parsed = this.parse();
+    }
+
+    private cleanSql(sql: string): string {
+        return sql.tw();
+    }
+
+    private prettySql(sql: string): string {
+        return format(sql);
+    }
+
+    public replaceWithStableDbView(sql?: string) {
+        const s = sql || this.sql;
+        const pdt_meta = this.getPdtMeta();
+        const new_sql = replaceSelectWithPdtView(s, pdt_meta);
+        return this.prettySql(new_sql);
+    }
+
+    public parse(sql?: string) {
+        const s = sql || this.sql;
+        const lines = s.split('\n');
+        const pdts: string[] = [];
+        let selectLines: string[] = [];
+        let totalLines: string[] = [];
+        let rowTotalLines: string[] = [];
+        let grandTotalLines: string[] = [];
+        let currentPdtLines: string[] = [];
+
+        let mode: 'select' | 'pdt' | 'total' | 'row_total' | 'grand_total' =
+            'select';
+
+        for (const line of lines) {
+            if (line.startsWith('-- generate derived table')) {
+                mode = 'pdt';
+                currentPdtLines = [line];
+                continue;
+            }
+            if (line.startsWith('-- finished')) {
+                currentPdtLines.push(line);
+                pdts.push(currentPdtLines.join('\n'));
+                mode = 'select';
+                continue;
+            }
+            if (line.startsWith('-- sql for creating the total')) {
+                mode = 'total';
+                continue;
+            }
+            if (line.startsWith('-- sql for creating the pivot row totals')) {
+                mode = 'row_total';
+                continue;
+            }
+            if (line.startsWith('-- sql for creating the grand totals')) {
+                mode = 'grand_total';
+                continue;
+            }
+
+            if (mode === 'pdt') {
+                currentPdtLines.push(line);
+            } else if (mode === 'select') {
+                selectLines.push(line);
+            } else if (mode === 'total') {
+                totalLines.push(line);
+            } else if (mode === 'row_total') {
+                rowTotalLines.push(line);
+            } else if (mode === 'grand_total') {
+                grandTotalLines.push(line);
+            }
+        }
+
+        let selectSql = selectLines.join('\n');
+        let pivotSql = '';
+
+        // Detect pivot query
+        if (selectSql.includes('z__pivot_col_rank')) {
+            pivotSql = selectSql;
+            // Extract inner query: FROM ( ... ) ww
+            // Use a regex that finds the innermost FROM ( ... ) ww block
+            // by ensuring the captured group does not contain "FROM ("
+            const match = selectSql.match(
+                /FROM \(\s*((?:(?!FROM \()[\s\S])+?)\s*\) ww/,
+            );
+            if (match && match[1]) {
+                selectSql = this.cleanSql(match[1]);
+
+                // Extract structural information from the pivot wrapper
+                const rowDimMatch = pivotSql.match(
+                    /PARTITION BY "([^"]+)"\) as z___min_rank/,
+                );
+                const colDimMatch = pivotSql.match(
+                    /DENSE_RANK\(\) OVER \(ORDER BY .*? "([^"]+)"\) AS z__pivot_col_rank/,
+                );
+                const limitMatch = pivotSql.match(
+                    /z___pivot_row_rank <= (\d+)/,
+                );
+
+                const rowDim = rowDimMatch ? rowDimMatch[1] : null;
+                const colDim = colDimMatch ? colDimMatch[1] : null;
+                const limit = limitMatch ? limitMatch[1] : null;
+
+                // Reorder columns if necessary: Row Dimension should come before Column Dimension
+                if (rowDim && colDim) {
+                    const lines = selectSql.split('\n');
+                    const rowDimIndex = lines.findIndex((l) =>
+                        l.includes(`AS "${rowDim}"`),
+                    );
+                    const colDimIndex = lines.findIndex((l) =>
+                        l.includes(`AS "${colDim}"`),
+                    );
+
+                    if (
+                        rowDimIndex !== -1 &&
+                        colDimIndex !== -1 &&
+                        colDimIndex < rowDimIndex
+                    ) {
+                        const temp = lines[colDimIndex];
+                        lines[colDimIndex] = lines[rowDimIndex];
+                        lines[rowDimIndex] = temp;
+                        selectSql = lines.join('\n');
+                    }
+                }
+
+                // Append ORDER BY and LIMIT based on structural findings
+                // If we reordered to put the row dimension first (or it was already first),
+                // and the pivot sorts by row rank, we can assume ORDER BY 1.
+                if (pivotSql.includes('ORDER BY z___pivot_row_rank')) {
+                    if (!selectSql.includes('ORDER BY')) {
+                        selectSql += '\nORDER BY\n1';
+                    }
+                }
+
+                if (limit) {
+                    if (!selectSql.includes('FETCH NEXT')) {
+                        selectSql += `\nFETCH NEXT ${limit} ROWS ONLY`;
+                    }
+                }
+            }
+        }
+
+        return {
+            pdts: pdts,
+            total: totalLines.join('\n'),
+            row_totals: rowTotalLines.join('\n'),
+            grand_total: grandTotalLines.join('\n'),
+            pivot: pivotSql,
+            select: selectSql,
+        };
+    }
+
+    public getPdtMeta() {
+        if (!this.parsed) {
+            this.parse();
+        }
+        const pdts = this.parsed.pdts;
+        return pdts.map((pdt) => getPDTMeta(pdt));
+    }
+}
 
 const getJoinTypeSql = (join_type: TJoinType) => {
     const joins = {
@@ -17,7 +206,7 @@ const getJoinTypeSql = (join_type: TJoinType) => {
 const getJoinSql = (
     join: IQueryJoin,
     dialect: string,
-    aliases: { [key: string]: string }
+    aliases: { [key: string]: string },
 ) => {
     let sql = `${getJoinTypeSql(join.type)} ${aliases[join.to_query_id]} ON `;
     join.joins.forEach((j, i) => {
@@ -25,12 +214,12 @@ const getJoinSql = (
             j.from_query_id,
             { id: j.from_field },
             dialect,
-            aliases
+            aliases,
         )} = ${fieldGetter(
             j.to_query_id,
             { id: j.to_field },
             dialect,
-            aliases
+            aliases,
         )}`;
         if (i < join.joins.length - 1) {
             sql += '\nAND ';
@@ -43,7 +232,7 @@ export const fieldTransform = (
     uuid: string,
     field: Pick<IQuery['fields'][number], 'id'>,
     dialect: string,
-    aliases: { [key: string]: string }
+    aliases: { [key: string]: string },
 ) => {
     const alias = aliases[uuid];
     if (dialect === 'bigquery_standard_sql') {
@@ -56,7 +245,7 @@ const fieldGetter = (
     uuid: string,
     field: Pick<IQuery['fields'][number], 'id'>,
     dialect: string,
-    aliases: { [key: string]: string }
+    aliases: { [key: string]: string },
 ) => {
     if (dialect === 'bigquery_standard_sql') {
         return `${aliases[uuid]}.${field.id.replace('.', '_')}`;
@@ -67,7 +256,7 @@ const fieldGetter = (
 const getFieldSelectList = (
     queries: IQuery[],
     dialect: string,
-    aliases: { [key: string]: string }
+    aliases: { [key: string]: string },
 ) => {
     return queries
         .map((q) => {
@@ -78,8 +267,8 @@ const getFieldSelectList = (
                             q.uuid,
                             f,
                             dialect,
-                            aliases
-                        )} AS ${fieldTransform(q.uuid, f, dialect, aliases)}`
+                            aliases,
+                        )} AS ${fieldTransform(q.uuid, f, dialect, aliases)}`,
                 )
                 .join(', ');
         })
@@ -107,7 +296,8 @@ const getQuerySql = async (
     queries: IQuery[],
     joins: { [key: string]: IQueryJoin },
     connection: string,
-    addStatus?: (status: keyof typeof STATUS_MESSAGES, done: boolean) => void
+    use_stable_db_view: boolean,
+    addStatus?: (status: keyof typeof STATUS_MESSAGES, done: boolean) => void,
 ) => {
     const aliases = queries.reduce((acc, q) => {
         acc[q.uuid] = q.alias || q.uuid;
@@ -115,16 +305,24 @@ const getQuerySql = async (
     }, {} as { [key: string]: string });
     const connection_meta = await sdk.ok(sdk.connection(connection));
     const dialect = getConnectionDialect(connection_meta);
+    const tmp_db_name = connection_meta.tmp_db_name;
     const getQueryOrSlug = async (query_id: string): Promise<string> => {
         // sometimes, looker doesn't like the new string query_id but the slug works.
         try {
             addStatus?.('get_query_sql', false);
-            return await sdk.ok(
+            const query = await sdk.ok(
                 sdk.run_query({
                     query_id: query_id,
                     result_format: 'sql',
-                })
+                    rebuild_pdts: use_stable_db_view,
+                }),
             );
+            if (use_stable_db_view) {
+                const parsed = new SQLParser(query);
+                return parsed.replaceWithStableDbView(parsed.parsed.select);
+            } else {
+                return query;
+            }
         } catch (e) {
             console.error(e);
         }
@@ -136,10 +334,16 @@ const getQuerySql = async (
                     sdk.run_query({
                         query_id: q4s.id,
                         result_format: 'sql',
-                    })
+                        rebuild_pdts: use_stable_db_view,
+                    }),
                 );
                 addStatus?.('get_query_sql', true);
-                return run;
+                if (use_stable_db_view) {
+                    const parsed = new SQLParser(run);
+                    return parsed.replaceWithStableDbView(parsed.parsed.select);
+                } else {
+                    return run;
+                }
             }
         } catch (e) {
             console.error(e);
@@ -157,7 +361,6 @@ const getQuerySql = async (
 
         // Wait for all SQL results
         const query_sql_results = await Promise.all(promises);
-
         // Step 2: Process each raw SQL string
         const query_sql = query_sql_results.reduce((acc, rawSqlResult, i) => {
             const curr_query = queries[i];
@@ -176,7 +379,7 @@ const getQuerySql = async (
             processedSql = processedSql
                 .replace(
                     /\sORDER\s+BY\s+[a-zA-Z0-9_.,\s()'"\-\`\[\]]+(?: ASC| DESC)?\s*$/i,
-                    ''
+                    '',
                 )
                 .trim();
 
@@ -188,7 +391,7 @@ const getQuerySql = async (
                 processedSql = processedSql
                     .replace(
                         /FETCH\s+(NEXT|FIRST)\s+\d+\s+ROWS?\s+ONLY\s*$/i,
-                        ''
+                        '',
                     )
                     .trim();
             }
@@ -197,7 +400,7 @@ const getQuerySql = async (
             processedSql = processedSql.trim();
             if (!processedSql) {
                 console.warn(
-                    `Query ${queryId} (Index: ${i}) resulted in empty SQL after processing. Raw SQL was:\n${rawSqlResult}`
+                    `Query ${queryId} (Index: ${i}) resulted in empty SQL after processing. Raw SQL was:\n${rawSqlResult}`,
                 );
                 processedSql = '-- Error: Processed SQL was empty';
             }
@@ -216,8 +419,8 @@ WITH ${`${queries
                 (q, i) =>
                     // safeQueryForWith wraps the CLEANED SQL in parentheses
                     `${q.alias || q.uuid} AS ${safeQueryForWith(
-                        query_sql[q.uuid as keyof typeof query_sql]
-                    )}${i < queries.length - 1 ? ',' : ''}`
+                        query_sql[q.uuid as keyof typeof query_sql],
+                    )}${i < queries.length - 1 ? ',' : ''}`,
             )
             .join('\n')}`}
 SELECT ${getFieldSelectList(queries, dialect, aliases)} FROM ${

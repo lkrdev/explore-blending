@@ -33,12 +33,12 @@ interface HandleLookMLBlendParams {
     search_params: URLSearchParams;
     getExploreField: (
         explore_id: string,
-        field_id: string
+        field_id: string,
     ) => IExploreField | undefined;
     user: any;
     getUserCommitComment: (
         user: any,
-        commentType: ('display_name' | 'email' | 'id')[]
+        commentType: ('display_name' | 'email' | 'id')[],
     ) => string | undefined;
     lookerHostData?: { hostOrigin?: string; extensionId?: string };
     dry_run: boolean;
@@ -80,7 +80,7 @@ export const handleLookMLBlend = async ({
                 sdk.lookml_model_explore({
                     lookml_model_name: model,
                     explore_name: explore,
-                })
+                }),
             );
             addStatus('get_model_explore', true);
             if (model_explore?.connection_name) {
@@ -89,7 +89,7 @@ export const handleLookMLBlend = async ({
         } catch (e) {
             console.error(
                 'Failed to get connection from lookml_model_explore:',
-                e
+                e,
             );
         }
     }
@@ -128,7 +128,8 @@ export const handleLookMLBlend = async ({
         queries,
         joins,
         connection_name,
-        addStatus
+        config.use_stable_db_view,
+        addStatus,
     );
 
     const fields: IBlendField[] = [];
@@ -147,7 +148,7 @@ export const handleLookMLBlend = async ({
                         q.uuid,
                         f,
                         getConnectionDialect(connection_meta),
-                        aliases
+                        aliases,
                     ),
                     label_short: found.label_short,
                     view_label: getExploreLabelFromQuery(q),
@@ -187,12 +188,12 @@ export const handleLookMLBlend = async ({
             connection_name,
             config.connection_model_mapping,
             config.collapse_connection,
-            config.collapse_connection_model_name
+            config.collapse_connection_model_name,
         ),
         connection_name: payload_connection_name,
         user_commit_comment: getUserCommitComment(
             user!,
-            config.user_commit_comment || []
+            config.user_commit_comment || [],
         ),
         create_measures: config.create_measures || false,
         dry_run,
@@ -201,19 +202,19 @@ export const handleLookMLBlend = async ({
     const headers: Record<string, string> = {
         'Content-Type': 'application/json',
         'x-personal-access-token': extension.createSecretKeyTag(
-            PERSONAL_ACCESS_TOKEN_USER_ATTRIBUTE
+            PERSONAL_ACCESS_TOKEN_USER_ATTRIBUTE,
         ),
         'x-base-url': lookerHostData?.hostOrigin || '',
         'x-webhook-secret': extension.createSecretKeyTag(
-            WEBHOOK_SECRET_USER_ATTRIBUTE
+            WEBHOOK_SECRET_USER_ATTRIBUTE,
         ),
     };
     if (config.access_grants) {
         headers['x-client-id'] = extension.createSecretKeyTag(
-            CLIENT_ID_USER_ATTRIBUTE
+            CLIENT_ID_USER_ATTRIBUTE,
         );
         headers['x-client-secret'] = extension.createSecretKeyTag(
-            CLIENT_SECRET_USER_ATTRIBUTE
+            CLIENT_SECRET_USER_ATTRIBUTE,
         );
     }
     try {
@@ -225,7 +226,7 @@ export const handleLookMLBlend = async ({
             body: JSON.stringify(payload),
             headers: headers,
         });
-        if (!r.body.ok) {
+        if (!r.body.success) {
             return {
                 success: false,
                 error: r.body.error,
@@ -235,7 +236,7 @@ export const handleLookMLBlend = async ({
             return { success: true, ...r.body };
         }
 
-        if (r.body?.ok === true) {
+        if (r.body?.success === true) {
             try {
                 const _artifact = await sdk.ok(
                     sdk.update_artifacts(ARTIFACT_NAMESPACE, [
@@ -248,7 +249,7 @@ export const handleLookMLBlend = async ({
                             }),
                             content_type: 'application/json',
                         },
-                    ])
+                    ]),
                 );
             } catch (e) {
                 console.error(e);
@@ -260,14 +261,14 @@ export const handleLookMLBlend = async ({
                             lookml_model_name: r.body.lookml_model_name,
                             explore_name: r.body.explore_name,
                             fields: 'id',
-                        })
+                        }),
                     );
                     if (_explore.id) {
                         break;
                     }
                 } catch (e) {
                     await new Promise((resolve) =>
-                        setTimeout(resolve, EXPLORE_POLL_DELAY)
+                        setTimeout(resolve, EXPLORE_POLL_DELAY),
                     );
                 }
             }
@@ -331,18 +332,19 @@ export const handleBlend = async ({
         sdk,
         queries,
         joins,
-        first_query_connection
+        first_query_connection,
+        config.use_stable_db_view,
     );
     try {
         const create_sql = await sdk.ok(
             sdk.create_sql_query({
                 sql: query_sql,
                 connection_name: first_query_connection,
-            })
+            }),
         );
         if (create_sql.slug) {
             const _run_sql = await sdk.ok(
-                sdk.run_sql_query(create_sql.slug, 'json')
+                sdk.run_sql_query(create_sql.slug, 'json'),
             );
             const url = `/extensions/${lookerHostData?.extensionId}/blended/${create_sql.slug}`;
             extension.openBrowserWindow(url, '_blank');

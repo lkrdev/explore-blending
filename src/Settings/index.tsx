@@ -63,37 +63,38 @@ const Settings: React.FC<ConfigModalProps> = ({ isOpen, onClose }) => {
         return (
             <Dialog isOpen={isOpen} onClose={onClose}>
                 <DialogContent>
-                    <Box p="large">Loading...</Box>
+                    <Box p='large'>Loading...</Box>
                 </DialogContent>
             </Dialog>
         );
     }
 
     const initialValues: ConfigData = {
-        lookml: config.lookml || false,
+        lookml: config.lookml ?? false,
         // @ts-expect-error - repoName and projectName are legacy fields
         repo_name: config.repo_name || config.repoName || '',
         // @ts-expect-error - repoName and projectName are legacy fields
         project_name: config.project_name || config.projectName || '',
         includes: config.includes || '',
-        access_grants: config.access_grants || false,
+        access_grants: config.access_grants ?? false,
         user_attribute: config.user_attribute || '',
         user_commit_comment: config.user_commit_comment || [],
         override_api: config.override_api || '',
         connection_model_mapping: config.connection_model_mapping || {},
-        restrict_settings: config.restrict_settings || false,
+        restrict_settings: config.restrict_settings ?? false,
         settings_group_ids: config.settings_group_ids || [],
         use_cached_model_explore_connections:
-            config.use_cached_model_explore_connections || false,
+            config.use_cached_model_explore_connections ?? false,
         cached_model_connection_data:
             config.cached_model_connection_data || undefined,
-        remove_branded_loading: config.remove_branded_loading || false,
-        display_loading_status: config.display_loading_status || false,
-        create_measures: config.create_measures || false,
-        collapse_connection: config.collapse_connection || false,
-        collapse_connection_name: config.collapse_connection_name || '',
+        remove_branded_loading: config.remove_branded_loading ?? false,
+        display_loading_status: config.display_loading_status ?? false,
+        create_measures: config.create_measures ?? false,
+        collapse_connection: config.collapse_connection ?? false,
+        collapse_connection_name: config.collapse_connection_name ?? '',
         collapse_connection_model_name:
             config.collapse_connection_model_name || '',
+        use_stable_db_view: config.use_stable_db_view ?? true,
     };
 
     const handleSubmit = async (values: typeof initialValues) => {
@@ -110,11 +111,11 @@ const Settings: React.FC<ConfigModalProps> = ({ isOpen, onClose }) => {
         if (values.restrict_settings) {
             if (!is_admin) {
                 const check = checkCurrentUserCanUpdateSettings(
-                    values.settings_group_ids || []
+                    values.settings_group_ids || [],
                 );
                 if (!check) {
                     errors.settings_group_ids = `Unable to update restrict settings as your user is not in the Group IDs and is not an admin. Your current group IDS are ${user?.group_ids?.join(
-                        ', '
+                        ', ',
                     )}`;
                 }
             }
@@ -129,7 +130,7 @@ const Settings: React.FC<ConfigModalProps> = ({ isOpen, onClose }) => {
                     'Universal Connection Name is required';
             } else if (
                 connections!.find(
-                    (c) => c.name === values.collapse_connection_name
+                    (c) => c.name === values.collapse_connection_name,
                 )
             ) {
                 errors.collapse_connection_name = `Could not find connection ${values.collapse_connection_name}`;
@@ -159,9 +160,9 @@ const Settings: React.FC<ConfigModalProps> = ({ isOpen, onClose }) => {
     }; // Only depends on values
 
     return (
-        <Dialog isOpen={isOpen} onClose={onClose} width="600px" height="80vh">
+        <Dialog isOpen={isOpen} onClose={onClose} width='600px' height='80vh'>
             <DialogHeader>
-                <Span fontSize="large" fontWeight="semiBold">
+                <Span fontSize='large' fontWeight='semiBold'>
                     Configuration Settings
                 </Span>
             </DialogHeader>
@@ -183,25 +184,25 @@ const Settings: React.FC<ConfigModalProps> = ({ isOpen, onClose }) => {
                     return (
                         <>
                             <DialogContent>
-                                <SpaceVertical gap="xsmall">
+                                <SpaceVertical gap='xsmall'>
                                     <FieldCheckbox
-                                        name="restrict_settings"
-                                        label="Restrict Settings Access"
+                                        name='restrict_settings'
+                                        label='Restrict Settings Access'
                                         checked={values.restrict_settings}
                                         onChange={(e) =>
                                             setFieldValue(
                                                 'restrict_settings',
-                                                e.target.checked
+                                                e.target.checked,
                                             )
                                         }
                                     />
                                     {values.restrict_settings && (
                                         <FieldText
-                                            name="settings_group_ids"
-                                            label="Allowed Group IDs (comma-separated)"
+                                            name='settings_group_ids'
+                                            label='Allowed Group IDs (comma-separated)'
                                             value={
                                                 values.settings_group_ids?.join(
-                                                    ', '
+                                                    ', ',
                                                 ) ?? ''
                                             }
                                             onChange={(e) => {
@@ -209,35 +210,46 @@ const Settings: React.FC<ConfigModalProps> = ({ isOpen, onClose }) => {
                                                     .split(',')
                                                     .map((id) => id.trim())
                                                     .filter(
-                                                        (id) => id.length > 0
+                                                        (id) => id.length > 0,
                                                     );
                                                 setFieldValue(
                                                     'settings_group_ids',
-                                                    groupIds
+                                                    groupIds,
                                                 );
                                             }}
-                                            placeholder="e.g., 1, 2, 3"
+                                            placeholder='e.g., 1, 2, 3'
                                         />
                                     )}
-                                    <Span fontSize="small" color="text2">
+                                    <Span fontSize='small' color='text2'>
                                         When enabled, only users in the
                                         specified groups or admins can access
                                         these settings.
                                     </Span>
-                                    <Span fontSize="small" color="critical">
+                                    <Span fontSize='small' color='critical'>
                                         {errors.settings_group_ids
                                             ? errors.settings_group_ids
                                             : ''}
                                     </Span>
+                                    <FieldCheckbox
+                                        name='use_stable_db_view'
+                                        label='Use Stable DB View'
+                                        checked={values.use_stable_db_view}
+                                        onChange={(e) =>
+                                            setFieldValue(
+                                                'use_stable_db_view',
+                                                e.target.checked,
+                                            )
+                                        }
+                                    />
                                     <Divider />
                                     <FieldCheckbox
-                                        name="lookml"
-                                        label="Use LookML"
+                                        name='lookml'
+                                        label='Use LookML'
                                         checked={values.lookml}
                                         onChange={(e) =>
                                             setFieldValue(
                                                 'lookml',
-                                                e.target.checked
+                                                e.target.checked,
                                             )
                                         }
                                     />
@@ -245,43 +257,43 @@ const Settings: React.FC<ConfigModalProps> = ({ isOpen, onClose }) => {
                                     {show_lookml_settings && (
                                         <>
                                             <FieldText
-                                                name="repo_name"
-                                                label="Repository Name for Blends"
+                                                name='repo_name'
+                                                label='Repository Name for Blends'
                                                 required
                                                 value={values.repo_name}
                                                 onChange={(e) =>
                                                     setFieldValue(
                                                         'repo_name',
-                                                        e.target.value
+                                                        e.target.value,
                                                     )
                                                 }
                                                 disabled={!values.lookml}
                                             />
                                             <FieldText
-                                                name="project_name"
-                                                label="Blend Project Name"
+                                                name='project_name'
+                                                label='Blend Project Name'
                                                 required
                                                 value={values.project_name}
                                                 onChange={(e) =>
                                                     setFieldValue(
                                                         'project_name',
-                                                        e.target.value
+                                                        e.target.value,
                                                     )
                                                 }
                                             />
                                             <FieldCheckbox
-                                                name="create_measures"
-                                                label="Create Measures"
+                                                name='create_measures'
+                                                label='Create Measures'
                                                 checked={values.create_measures}
                                                 onChange={(e) =>
                                                     setFieldValue(
                                                         'create_measures',
-                                                        e.target.checked
+                                                        e.target.checked,
                                                     )
                                                 }
                                             />
                                             {/* Single Connection Mode Toggle */}
-                                            <SpaceVertical gap="small">
+                                            <SpaceVertical gap='small'>
                                                 <Label>Connection Mode</Label>
                                                 <ButtonToggle
                                                     value={
@@ -290,21 +302,21 @@ const Settings: React.FC<ConfigModalProps> = ({ isOpen, onClose }) => {
                                                             : 'multiple'
                                                     }
                                                     onChange={(
-                                                        selectedValue: string
+                                                        selectedValue: string,
                                                     ) => {
                                                         const isSingle =
                                                             selectedValue ===
                                                             'single';
                                                         setFieldValue(
                                                             'collapse_connection',
-                                                            isSingle
+                                                            isSingle,
                                                         );
                                                     }}
                                                 >
-                                                    <ButtonItem value="multiple">
+                                                    <ButtonItem value='multiple'>
                                                         Keep Original Connection
                                                     </ButtonItem>
-                                                    <ButtonItem value="single">
+                                                    <ButtonItem value='single'>
                                                         Universal Connection
                                                     </ButtonItem>
                                                 </ButtonToggle>
@@ -314,8 +326,8 @@ const Settings: React.FC<ConfigModalProps> = ({ isOpen, onClose }) => {
                                             {values.collapse_connection ? (
                                                 <>
                                                     <FieldText
-                                                        name="collapse_connection_name"
-                                                        label="Universal Connection Name"
+                                                        name='collapse_connection_name'
+                                                        label='Universal Connection Name'
                                                         required
                                                         value={
                                                             values.collapse_connection_name ||
@@ -328,14 +340,14 @@ const Settings: React.FC<ConfigModalProps> = ({ isOpen, onClose }) => {
                                                         onChange={(e) =>
                                                             setFieldValue(
                                                                 'collapse_connection_name',
-                                                                e.target.value
+                                                                e.target.value,
                                                             )
                                                         }
-                                                        placeholder="Enter model name for the collapse connection setting"
+                                                        placeholder='Enter model name for the collapse connection setting'
                                                     />
                                                     <FieldText
-                                                        name="collapse_connection_model_name"
-                                                        label="Universal Connection Model Name"
+                                                        name='collapse_connection_model_name'
+                                                        label='Universal Connection Model Name'
                                                         required
                                                         value={
                                                             values.collapse_connection_model_name ||
@@ -344,10 +356,10 @@ const Settings: React.FC<ConfigModalProps> = ({ isOpen, onClose }) => {
                                                         onChange={(e) =>
                                                             setFieldValue(
                                                                 'collapse_connection_model_name',
-                                                                e.target.value
+                                                                e.target.value,
                                                             )
                                                         }
-                                                        placeholder="Enter model name for the all connections setting"
+                                                        placeholder='Enter model name for the all connections setting'
                                                     />
                                                 </>
                                             ) : (
@@ -356,8 +368,8 @@ const Settings: React.FC<ConfigModalProps> = ({ isOpen, onClose }) => {
                                                         Connection Model Mapping
                                                     </Label>
                                                     <StyledSpaceVertical
-                                                        gap="small"
-                                                        pl="small"
+                                                        gap='small'
+                                                        pl='small'
                                                     >
                                                         {connections.map(
                                                             (connection) => {
@@ -369,7 +381,7 @@ const Settings: React.FC<ConfigModalProps> = ({ isOpen, onClose }) => {
                                                                         conn_name,
                                                                         values.connection_model_mapping,
                                                                         values.collapse_connection,
-                                                                        values.collapse_connection_model_name
+                                                                        values.collapse_connection_model_name,
                                                                     );
                                                                 return (
                                                                     <FieldText
@@ -384,7 +396,7 @@ const Settings: React.FC<ConfigModalProps> = ({ isOpen, onClose }) => {
                                                                             model_name
                                                                         }
                                                                         onChange={(
-                                                                            e
+                                                                            e,
                                                                         ) => {
                                                                             const new_value =
                                                                                 e
@@ -401,43 +413,43 @@ const Settings: React.FC<ConfigModalProps> = ({ isOpen, onClose }) => {
                                                                                             model_name:
                                                                                                 new_value,
                                                                                         },
-                                                                                }
+                                                                                },
                                                                             );
                                                                         }}
                                                                     />
                                                                 );
-                                                            }
+                                                            },
                                                         )}
                                                     </StyledSpaceVertical>
                                                 </>
                                             )}
                                             <FieldText
-                                                name="includes"
-                                                label="Includes to put in the LookML file"
+                                                name='includes'
+                                                label='Includes to put in the LookML file'
                                                 value={values.includes}
                                                 onChange={(e) =>
                                                     setFieldValue(
                                                         'includes',
-                                                        e.target.value
+                                                        e.target.value,
                                                     )
                                                 }
                                             />
                                             <FieldCheckbox
-                                                name="access_grants"
-                                                label="Use Access Grants"
+                                                name='access_grants'
+                                                label='Use Access Grants'
                                                 checked={values.access_grants}
                                                 onChange={(e) =>
                                                     setFieldValue(
                                                         'access_grants',
-                                                        e.target.checked
+                                                        e.target.checked,
                                                     )
                                                 }
                                             />
                                             {Boolean(values.access_grants) && (
                                                 <FieldText
                                                     prefix={'extension'}
-                                                    name="user_attribute"
-                                                    label="Access Grant User Attribute"
+                                                    name='user_attribute'
+                                                    label='Access Grant User Attribute'
                                                     required
                                                     value={
                                                         values.user_attribute
@@ -445,12 +457,12 @@ const Settings: React.FC<ConfigModalProps> = ({ isOpen, onClose }) => {
                                                     onChange={(e) =>
                                                         setFieldValue(
                                                             'user_attribute',
-                                                            e.target.value
+                                                            e.target.value,
                                                         )
                                                     }
                                                 />
                                             )}
-                                            <SpaceVertical gap="xxsmall">
+                                            <SpaceVertical gap='xxsmall'>
                                                 <Label>
                                                     User Commit Comment
                                                 </Label>
@@ -459,31 +471,31 @@ const Settings: React.FC<ConfigModalProps> = ({ isOpen, onClose }) => {
                                                         values.user_commit_comment
                                                     }
                                                     onChange={(
-                                                        values: string[]
+                                                        values: string[],
                                                     ) => {
                                                         setFieldValue(
                                                             'user_commit_comment',
-                                                            values as ConfigFormData['user_commit_comment']
+                                                            values as ConfigFormData['user_commit_comment'],
                                                         );
                                                     }}
                                                 >
-                                                    <ButtonItem value="display_name">
+                                                    <ButtonItem value='display_name'>
                                                         Display Name
                                                     </ButtonItem>
-                                                    <ButtonItem value="email">
+                                                    <ButtonItem value='email'>
                                                         Email
                                                     </ButtonItem>
-                                                    <ButtonItem value="id">
+                                                    <ButtonItem value='id'>
                                                         ID
                                                     </ButtonItem>
                                                 </ButtonGroup>
                                                 {values.user_commit_comment &&
                                                 values.user_commit_comment
                                                     .length > 0 ? (
-                                                    <CodeBlock border="none">
+                                                    <CodeBlock border='none'>
                                                         {getUserCommitComment(
                                                             user,
-                                                            values.user_commit_comment
+                                                            values.user_commit_comment,
                                                         )}
                                                     </CodeBlock>
                                                 ) : (
@@ -500,13 +512,13 @@ const Settings: React.FC<ConfigModalProps> = ({ isOpen, onClose }) => {
                                                 >
                                                     {extension
                                                         .createSecretKeyTag(
-                                                            WEBHOOK_SECRET_USER_ATTRIBUTE
+                                                            WEBHOOK_SECRET_USER_ATTRIBUTE,
                                                         )
                                                         .replace(/[{}]/g, '')}
                                                     {'\n'}
                                                     {extension
                                                         .createSecretKeyTag(
-                                                            PERSONAL_ACCESS_TOKEN_USER_ATTRIBUTE
+                                                            PERSONAL_ACCESS_TOKEN_USER_ATTRIBUTE,
                                                         )
                                                         .replace(/[{}]/g, '')}
                                                     {'\n'}
@@ -514,20 +526,20 @@ const Settings: React.FC<ConfigModalProps> = ({ isOpen, onClose }) => {
                                                         <>
                                                             {extension
                                                                 .createSecretKeyTag(
-                                                                    CLIENT_ID_USER_ATTRIBUTE
+                                                                    CLIENT_ID_USER_ATTRIBUTE,
                                                                 )
                                                                 .replace(
                                                                     /[{}]/g,
-                                                                    ''
+                                                                    '',
                                                                 )}
                                                             {'\n'}
                                                             {extension
                                                                 .createSecretKeyTag(
-                                                                    CLIENT_SECRET_USER_ATTRIBUTE
+                                                                    CLIENT_SECRET_USER_ATTRIBUTE,
                                                                 )
                                                                 .replace(
                                                                     /[{}]/g,
-                                                                    ''
+                                                                    '',
                                                                 )}
                                                             {'\n'}
                                                         </>
@@ -538,32 +550,32 @@ const Settings: React.FC<ConfigModalProps> = ({ isOpen, onClose }) => {
                                     )}
                                     <Divider />
                                     <FieldText
-                                        name="override_api"
-                                        label="Override API"
+                                        name='override_api'
+                                        label='Override API'
                                         value={values.override_api}
                                         onChange={(e) =>
                                             setFieldValue(
                                                 'override_api',
-                                                e.target.value
+                                                e.target.value,
                                             )
                                         }
                                     />
-                                    <Span fontSize="small" color="critical">
+                                    <Span fontSize='small' color='critical'>
                                         {errors.override_api
                                             ? errors.override_api
                                             : ''}
                                     </Span>
                                     <Space>
                                         <FieldCheckbox
-                                            name="use_cached_model_explore_connections"
-                                            label="Use Cached Model Connection"
+                                            name='use_cached_model_explore_connections'
+                                            label='Use Cached Model Connection'
                                             checked={
                                                 values.use_cached_model_explore_connections
                                             }
                                             onChange={(e) =>
                                                 setFieldValue(
                                                     'use_cached_model_explore_connections',
-                                                    e.target.checked
+                                                    e.target.checked,
                                                 )
                                             }
                                         />
@@ -573,18 +585,18 @@ const Settings: React.FC<ConfigModalProps> = ({ isOpen, onClose }) => {
                                                     values.cached_model_connection_data
                                                 }
                                                 updateModelConnection={(
-                                                    model_connection
+                                                    model_connection,
                                                 ) => {
                                                     const connections =
                                                         Object.entries(
-                                                            model_connection
+                                                            model_connection,
                                                         ).reduce(
                                                             (
                                                                 acc,
                                                                 [
                                                                     model,
                                                                     connection,
-                                                                ]
+                                                                ],
                                                             ) => {
                                                                 if (
                                                                     acc[
@@ -594,7 +606,7 @@ const Settings: React.FC<ConfigModalProps> = ({ isOpen, onClose }) => {
                                                                     acc[
                                                                         connection
                                                                     ].push(
-                                                                        model
+                                                                        model,
                                                                     );
                                                                 } else {
                                                                     acc[
@@ -603,7 +615,7 @@ const Settings: React.FC<ConfigModalProps> = ({ isOpen, onClose }) => {
                                                                 }
                                                                 return acc;
                                                             },
-                                                            {} as ModelConnectionCache['values']
+                                                            {} as ModelConnectionCache['values'],
                                                         );
                                                     setFieldValue(
                                                         'cached_model_connection_data',
@@ -617,51 +629,51 @@ const Settings: React.FC<ConfigModalProps> = ({ isOpen, onClose }) => {
                                                                             60 *
                                                                             24 *
                                                                             365 *
-                                                                            10 // 10 years
+                                                                            10, // 10 years
                                                                 ).toISOString(),
-                                                        }
+                                                        },
                                                     );
                                                 }}
                                             />
                                         )}
                                     </Space>
                                     <FieldCheckbox
-                                        name="remove_branded_loading"
-                                        label="Remove Branded Loading"
+                                        name='remove_branded_loading'
+                                        label='Remove Branded Loading'
                                         checked={values.remove_branded_loading}
                                         onChange={(e) =>
                                             setFieldValue(
                                                 'remove_branded_loading',
-                                                e.target.checked
+                                                e.target.checked,
                                             )
                                         }
                                     />
                                     <FieldCheckbox
-                                        name="display_loading_status"
-                                        label="Display Loading Status"
+                                        name='display_loading_status'
+                                        label='Display Loading Status'
                                         checked={values.display_loading_status}
                                         onChange={(e) =>
                                             setFieldValue(
                                                 'display_loading_status',
-                                                e.target.checked
+                                                e.target.checked,
                                             )
                                         }
                                     />
                                     <FieldCheckbox
-                                        name="use_extension_label"
-                                        label="Use Extension Label"
+                                        name='use_extension_label'
+                                        label='Use Extension Label'
                                         checked={values.use_extension_label}
                                         onChange={(e) =>
                                             setFieldValue(
                                                 'use_extension_label',
-                                                e.target.checked
+                                                e.target.checked,
                                             )
                                         }
                                     />
                                 </SpaceVertical>
                             </DialogContent>
                             <DialogFooter>
-                                <Space between justify="end">
+                                <Space between justify='end'>
                                     <Button
                                         onClick={() => formikHandleSubmit()}
                                         disabled={isSubmitting}
@@ -671,15 +683,15 @@ const Settings: React.FC<ConfigModalProps> = ({ isOpen, onClose }) => {
                                             : 'Save Configuration'}
                                     </Button>
                                     {checkEntitlements()?.errors.length > 0 && (
-                                        <SpaceVertical gap="none">
+                                        <SpaceVertical gap='none'>
                                             {checkEntitlements()?.errors.map(
                                                 (error) => {
                                                     if (
                                                         error.includes(
-                                                            API_URL
+                                                            API_URL,
                                                         ) &&
                                                         Boolean(
-                                                            values.override_api
+                                                            values.override_api,
                                                         )
                                                     ) {
                                                         return null;
@@ -687,13 +699,13 @@ const Settings: React.FC<ConfigModalProps> = ({ isOpen, onClose }) => {
 
                                                     return (
                                                         <Paragraph
-                                                            fontSize="small"
-                                                            color="critical"
+                                                            fontSize='small'
+                                                            color='critical'
                                                         >
                                                             {error}
                                                         </Paragraph>
                                                     );
-                                                }
+                                                },
                                             )}
                                         </SpaceVertical>
                                     )}
@@ -731,7 +743,7 @@ export const SettingsIconButton: React.FC = () => {
             <IconButton
                 icon={<SettingsApplications />}
                 onClick={openModal.setTrue}
-                label="Settings"
+                label='Settings'
             />
             <Settings isOpen={openModal.value} onClose={openModal.setFalse} />
         </>

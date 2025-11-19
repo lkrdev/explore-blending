@@ -1,6 +1,6 @@
 # Explore Blending
 
-This is an early version of a Looker extension that allows explore users to blend explores together, choose join paths, and perform custom calculations (custom dimensions, custom measures and table calculations) on top of the result. It's an alternative version of merge results that lets an end user do joins on the full explore queries. Explore blending lets you take any number of Looker explore queries and join them together in the database. It's like merge results beyond just a simple in-memory engine. There are two main modes, SQL and LookML modes, we highly recommend using the LookML mode as it provides the most functionality, however any user with SQL Runner access can test out the functionality with the SQL model
+The Explore Blending application is an early version of a Looker extension that allows explore users to blend explores, choose join paths, and perform custom calculations (custom dimensions, custom measures, and table calculations) on the result. It's an alternative version of merge results that lets an end user do joins on the full explore queries. Explore Blending enables you to combine any number of Looker Explore questions in the database. It's like merging results beyond just a simple in-memory engine. There are two main modes: SQL and LookML. We highly recommend using the LookML mode, as it provides the most functionality; however, any user with SQL Runner access can test it using the SQL model.
 
 ## How it works
 
@@ -8,7 +8,7 @@ This is an early version of a Looker extension that allows explore users to blen
 
 ## Try it Now
 
--   If you have `sql_runner` permissions in Looker, you can test this extension with no configuration. Add this into any `manifest.lkml` file within any of your LookML projects
+-   If you have `sql_runner` permissions in Looker, you can test this extension with no configuration. Add this to any `manifest.lkml` file within any of your LookML projects
 
 ```
 application: explore_blending {
@@ -48,7 +48,7 @@ application: explore_blending {
 }
 ```
 
-## Built in Extension Settings
+## Built-in Extension Settings
 
 ## Use LookML
 
@@ -60,9 +60,13 @@ application: explore_blending {
 
 API Credentials required
 
--   Recommended to use the Hide Values yes with the API credential user attributes with a domain allowlist
--   -   `https://www.lkr.dev/apps/explore-blending/*` or https:your.override.api/\*
+-   Recommended to use the Hide Values yes with the API credential, user attributes, and a domain allowlist
+-   -   `https://www.lkr.dev/apps/explore-blending/*` or https://your.override.api/*
 
 ## Hosting this yourself
+
+## Versioning
+
+If you are using the lkr.dev blend_api (happens by default), but want to pin yourself to a particular version of the frontend and backend, you can use a JavaScript URL in your manifest of a specific version of the extension and an `override_api` in your config.
 
 ### Using override API

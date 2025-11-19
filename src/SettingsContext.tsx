@@ -36,6 +36,7 @@ export interface ConfigData {
     collapse_connection_name?: string;
     collapse_connection_model_name?: string;
     use_extension_label?: boolean;
+    use_stable_db_view?: boolean;
 }
 
 export interface ConfigFormData extends ConfigData {
@@ -53,17 +54,17 @@ interface SettingsContextType {
     refreshConfig: () => Promise<void>;
     getUserCommitComment: (
         user: any,
-        commentType: ('display_name' | 'email' | 'id')[]
+        commentType: ('display_name' | 'email' | 'id')[],
     ) => string | undefined;
     checkCurrentUserCanUpdateSettings: (group_ids: string[]) => boolean;
     can_update_settings: boolean;
     updateCachedModelConnection: (
-        cached_model_connection_data: ModelConnectionCache
+        cached_model_connection_data: ModelConnectionCache,
     ) => void;
 }
 
 const SettingsContext = createContext<SettingsContextType | undefined>(
-    undefined
+    undefined,
 );
 
 const arrayIntersection = (arr1: string[], arr2: string[]): string[] => {
@@ -120,7 +121,7 @@ export const SettingsProvider: React.FC<SettingsProviderProps> = ({
 
     const getUserCommitCommentHelper = (
         user: any,
-        commentType: ('display_name' | 'email' | 'id')[]
+        commentType: ('display_name' | 'email' | 'id')[],
     ) => {
         return getUserCommitComment(user, commentType);
     };
@@ -148,8 +149,9 @@ export const SettingsProvider: React.FC<SettingsProviderProps> = ({
             collapse_connection_model_name:
                 config?.collapse_connection_model_name ?? '',
             use_extension_label: config?.use_extension_label ?? false,
+            use_stable_db_view: config?.use_stable_db_view ?? true,
         }),
-        [config]
+        [config],
     );
 
     const checkCurrentUserCanUpdateSettings = (group_ids: string[]) => {
@@ -163,7 +165,7 @@ export const SettingsProvider: React.FC<SettingsProviderProps> = ({
             return true;
         } else {
             return checkCurrentUserCanUpdateSettings(
-                config?.settings_group_ids || []
+                config?.settings_group_ids || [],
             );
         }
     }, [
@@ -193,9 +195,9 @@ export const SettingsProvider: React.FC<SettingsProviderProps> = ({
                             conn_name,
                             form_with_defaults.connection_model_mapping,
                             form_with_defaults.collapse_connection,
-                            form_with_defaults.collapse_connection_model_name
+                            form_with_defaults.collapse_connection_model_name,
                         ),
-                    }
+                    },
                 );
             });
 
@@ -209,7 +211,7 @@ export const SettingsProvider: React.FC<SettingsProviderProps> = ({
     };
 
     const updateCachedModelConnection = (
-        cached_model_connection_data: ModelConnectionCache
+        cached_model_connection_data: ModelConnectionCache,
     ) => {
         setConfig((prev) => {
             if (!prev) {

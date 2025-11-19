@@ -30,7 +30,7 @@ interface IBlendContext {
         to_query_id: string,
         from_field: string,
         to_field: string,
-        type: TJoinType
+        type: TJoinType,
     ) => void;
     // *** newQuery now returns the created query object or null ***
     newQuery: (newQuery: INewQuery) => Promise<IQuery | null>;
@@ -38,7 +38,7 @@ interface IBlendContext {
     updateQuery: (query: IQuery) => void;
     // *** duplicateQuery returns info needed to call newQuery ***
     duplicateQuery: (
-        sourceUuid: string
+        sourceUuid: string,
     ) => { exploreId: string; label: string; sourceQuery: IQuery } | null;
     deleteJoin: (to_query_id: string, join_uuid: string) => void;
     // *** Added function to update only fields ***
@@ -60,7 +60,7 @@ export const useBlendContext = () => {
     const context = useContext(BlendContext);
     if (!context) {
         throw new Error(
-            'useBlendContext must be used within a BlendContextProvider'
+            'useBlendContext must be used within a BlendContextProvider',
         );
     }
     return context;
@@ -73,7 +73,6 @@ const setBlendData = (blend_data: IBlendData): string | undefined => {
         (!blend_data.queries || blend_data.queries.length === 0) &&
         (!blend_data.joins || Object.keys(blend_data.joins).length === 0)
     ) {
-        //console.log("[setBlendData] No queries or joins, returning undefined.");
         return undefined;
     }
 
@@ -108,7 +107,7 @@ const setBlendData = (blend_data: IBlendData): string | undefined => {
                     type: found_query_join.type,
                     joins: found_query_join.joins.map((j) => {
                         const from_query_index = blend_data.queries.findIndex(
-                            (q) => q.uuid === j.from_query_id
+                            (q) => q.uuid === j.from_query_id,
                         );
                         return {
                             from_query_index: from_query_index,
@@ -129,19 +128,18 @@ const setBlendData = (blend_data: IBlendData): string | undefined => {
             joins: [],
             query_uuids: [],
             queries: [],
-        } as IBlendQueryOutput
+        } as IBlendQueryOutput,
     );
     try {
         // Encode the JSON string to Base64
         const encodedData = btoa(JSON.stringify(dataToEncode));
-        //console.log("[setBlendData] Encoded data successfully.");
         return encodedData;
     } catch (error) {
         console.error(
             '[setBlendData] Error encoding data to Base64:',
             error,
             'Data:',
-            dataToEncode
+            dataToEncode,
         );
         return undefined; // Return undefined on error
     }
@@ -160,10 +158,10 @@ export const BlendContextProvider = ({
         // Select first query initially if available, otherwise null
         blend_data?.queries && blend_data.queries.length > 0
             ? blend_data.queries[0]
-            : null
+            : null,
     );
     const [joins, setJoins] = useState<{ [key: string]: IQueryJoin }>(
-        blend_data?.joins || {}
+        blend_data?.joins || {},
     );
     const [embed_connection, setEmbedConnection] =
         useState<ILookerConnection | null>(null);
@@ -195,7 +193,7 @@ export const BlendContextProvider = ({
                 return { ...prevJoins, [to_query_id]: newEntry };
             });
         },
-        [setJoins]
+        [setJoins],
     ); // Added dependency
 
     const updateJoin = useCallback(
@@ -211,7 +209,7 @@ export const BlendContextProvider = ({
                     return { ...prevJoins, [join.to_query_id]: newJoinEntry };
                 } else {
                     const joinIndex = current_join_entry.joins.findIndex(
-                        (j) => j.uuid === join.uuid
+                        (j) => j.uuid === join.uuid,
                     );
                     let updatedInnerJoins: IJoin[];
                     if (joinIndex > -1) {
@@ -219,7 +217,7 @@ export const BlendContextProvider = ({
                             (j, index) =>
                                 index === joinIndex
                                     ? { ...join, uuid: j.uuid }
-                                    : j
+                                    : j,
                         );
                     } else {
                         updatedInnerJoins = [
@@ -237,7 +235,7 @@ export const BlendContextProvider = ({
                 }
             });
         },
-        [setJoins]
+        [setJoins],
     ); // Added dependency
 
     const deleteJoin = useCallback(
@@ -255,7 +253,7 @@ export const BlendContextProvider = ({
                 return newJoins;
             });
         },
-        [setJoins]
+        [setJoins],
     ); // Added dependency
 
     // --- Place newJoin definition BEFORE newQuery ---
@@ -266,14 +264,14 @@ export const BlendContextProvider = ({
             to_query_id: string,
             from_field: string,
             to_field: string,
-            type: TJoinType
+            type: TJoinType,
         ) => {
             setJoins((prevJoins) => {
                 // Ensure the target query exists or create a default structure
                 const targetQueryId = to_query_id || ''; // Handle cases where to_query_id might be empty initially
                 if (!targetQueryId) {
                     console.warn(
-                        '[BlendContext:newJoin] Attempted to create join with empty to_query_id.'
+                        '[BlendContext:newJoin] Attempted to create join with empty to_query_id.',
                     );
                     return prevJoins; // Avoid creating join with no target
                 }
@@ -290,9 +288,7 @@ export const BlendContextProvider = ({
 
                 if (existingEntry) {
                     // Add the new join condition to the existing entry's joins array
-                    console.log(
-                        `[BlendContext:newJoin] Adding join condition to existing entry for ${targetQueryId}`
-                    );
+
                     return {
                         ...prevJoins,
                         [targetQueryId]: {
@@ -306,9 +302,7 @@ export const BlendContextProvider = ({
                     };
                 } else {
                     // Create a new entry for the to_query_id
-                    console.log(
-                        `[BlendContext:newJoin] Creating new join entry for ${targetQueryId}`
-                    );
+
                     const newQueryJoinEntry: IQueryJoin = {
                         to_query_id: targetQueryId,
                         joins: [newJoinObject], // Start with the new join condition
@@ -318,7 +312,7 @@ export const BlendContextProvider = ({
                 }
             });
         },
-        [setJoins]
+        [setJoins],
     ); // Dependency
 
     // --- Replace the existing newQuery function in BlendContext.tsx with this ---
@@ -336,9 +330,6 @@ export const BlendContextProvider = ({
             }
 
             const fieldsToUse = initialFields || []; // Use initialFields if provided, else empty array
-            console.log(
-                `[BlendContext:newQuery] Creating new query (UUID: ${uuid}) for explore: ${explore_id}. Initial field count: ${fieldsToUse.length}`
-            );
 
             const newQueryObject: IQuery = {
                 uuid,
@@ -348,13 +339,7 @@ export const BlendContextProvider = ({
             };
 
             try {
-                console.log(
-                    `[BlendContext:newQuery] Calling getExploreFields for ${explore_id}...`
-                );
                 await getExploreFields(explore_id); // Still call this - may be needed for Looker setup, hopefully cached.
-                console.log(
-                    `[BlendContext:newQuery] getExploreFields completed for ${explore_id}.`
-                );
 
                 // Add the new query (now potentially with fields) to state
                 setQueries((p) => [...p, newQueryObject]);
@@ -370,45 +355,37 @@ export const BlendContextProvider = ({
 
                 // Select the newly created query
                 setSelectedQuery(newQueryObject);
-                console.log(
-                    `[BlendContext:newQuery] Added and selected new query ${uuid}. Returning object.`
-                );
+
                 return newQueryObject; // Return the object
             } catch (error) {
                 console.error(
                     `[BlendContext:newQuery] Error during new query creation for explore ${explore_id}:`,
-                    error
+                    error,
                 );
                 return null;
             }
             // Update dependencies as needed
         },
-        [getExploreFields, queries, setQueries, setSelectedQuery, newJoin]
+        [getExploreFields, queries, setQueries, setSelectedQuery, newJoin],
     );
     // --- End newQuery modification ---
 
     // *** UPDATED: duplicateQuery only returns info ***
     const duplicateQuery = (
-        sourceUuid: string
+        sourceUuid: string,
     ): { exploreId: string; label: string; sourceQuery: IQuery } | null => {
-        console.log(
-            `[BlendContext:duplicateQuery] Finding source query: ${sourceUuid}`
-        );
         const sourceQuery = queries.find((q) => q.uuid === sourceUuid);
 
         if (!sourceQuery || !sourceQuery.explore?.id) {
             console.error(
                 '[BlendContext:duplicateQuery] Source query or its explore ID not found:',
-                sourceUuid
+                sourceUuid,
             );
             return null;
         }
 
         const exploreId = sourceQuery.explore.id;
         const newLabel = `${sourceQuery.explore.label || 'Query'} (Copy)`;
-        console.log(
-            `[BlendContext:duplicateQuery] Found source, returning info: exploreId=${exploreId}, label=${newLabel}`
-        );
 
         // Return info needed to create a new query based on this one
         return {
@@ -445,7 +422,7 @@ export const BlendContextProvider = ({
                         if (Array.isArray(object_value)) {
                             return source_value;
                         }
-                    }
+                    },
                 );
             } else {
                 new_queries.push(query);
@@ -458,7 +435,7 @@ export const BlendContextProvider = ({
         setQueries([]);
         setJoins({});
         setSelectedQuery(null);
-        embed_connection?.preload();
+        setEmbedConnection(null);
     };
 
     // --- Keep deleteQuery as updated previously (with field resets) ---
@@ -470,30 +447,23 @@ export const BlendContextProvider = ({
             setQueries((prevQueries) => {
                 originalQueries = prevQueries;
                 updatedQueries = prevQueries.filter(
-                    (q) => q.uuid !== uuidToDelete
+                    (q) => q.uuid !== uuidToDelete,
                 );
-                console.log(
-                    `[BlendContext:deleteQuery] Removing query ${uuidToDelete}. Queries remaining: ${updatedQueries.length}`
-                );
+
                 return updatedQueries;
             });
 
             setJoins((prevJoins) => {
                 const newJoinsState = { ...prevJoins };
                 if (newJoinsState[uuidToDelete]) {
-                    console.log(
-                        `[BlendContext:deleteQuery] Removing joins entry for deleted query: ${uuidToDelete}`
-                    );
                     delete newJoinsState[uuidToDelete];
                 }
-                console.log(
-                    `[BlendContext:deleteQuery] Checking remaining joins for references to ${uuidToDelete}...`
-                );
+
                 for (const toQueryId in newJoinsState) {
                     if (
                         Object.prototype.hasOwnProperty.call(
                             newJoinsState,
-                            toQueryId
+                            toQueryId,
                         )
                     ) {
                         const queryJoinEntry = newJoinsState[toQueryId];
@@ -505,21 +475,15 @@ export const BlendContextProvider = ({
                                     modifiedJoin.from_query_id === uuidToDelete
                                 ) {
                                     if (modifiedJoin.from_field) {
-                                        console.log(
-                                            `[BlendContext:deleteQuery] Resetting from_field ('${modifiedJoin.from_field}') in join ${modifiedJoin.uuid} (to ${toQueryId}) because from_query ${uuidToDelete} was deleted.`
-                                        );
                                         modifiedJoin.from_field = '';
                                         joinsModified = true;
                                     }
                                 }
                                 // Add optional check for to_query_id here if needed
                                 return modifiedJoin;
-                            }
+                            },
                         );
                         if (joinsModified) {
-                            console.log(
-                                `[BlendContext:deleteQuery] Updating joins entry for ${toQueryId} due to field resets.`
-                            );
                             newJoinsState[toQueryId] = {
                                 ...queryJoinEntry,
                                 joins: updatedInnerJoins,
@@ -527,46 +491,30 @@ export const BlendContextProvider = ({
                         }
                     }
                 }
-                console.log(
-                    `[BlendContext:deleteQuery] Finished cleaning join references.`
-                );
+
                 return newJoinsState;
             });
 
             setSelectedQuery((prevSelectedQuery) => {
                 if (prevSelectedQuery?.uuid === uuidToDelete) {
                     const deletedIndex = originalQueries.findIndex(
-                        (q) => q.uuid === uuidToDelete
+                        (q) => q.uuid === uuidToDelete,
                     );
                     if (updatedQueries.length === 0) {
-                        console.log(
-                            `[BlendContext:deleteQuery] No queries left, deselecting.`
-                        );
                         return null;
                     }
                     if (
                         deletedIndex > 0 &&
                         deletedIndex <= updatedQueries.length
                     ) {
-                        console.log(
-                            `[BlendContext:deleteQuery] Selecting previous query: ${
-                                updatedQueries[deletedIndex - 1].uuid
-                            }`
-                        );
                         return updatedQueries[deletedIndex - 1];
                     }
-                    console.log(
-                        `[BlendContext:deleteQuery] Selecting first query: ${updatedQueries[0].uuid}`
-                    );
                     return updatedQueries[0];
                 }
                 return prevSelectedQuery;
             });
-            console.log(
-                `[BlendContext:deleteQuery] Deletion process complete for ${uuidToDelete}.`
-            );
         },
-        [setQueries, setJoins, setSelectedQuery]
+        [setQueries, setJoins, setSelectedQuery],
     );
 
     // --- Keep validation functions as originally provided ---
@@ -591,16 +539,11 @@ export const BlendContextProvider = ({
             return [];
         }
 
-        console.log(
-            `[BlendContext:validateJoins] Validating joins, ignoring first query: ${firstQueryUuid}`
-        );
-
         // Filter through all join configurations stored in the 'joins' state object
         const invalid_join_entries = Object.values(joins).filter((j_entry) => {
             // --- ADD THIS CHECK: ---
             // If this join entry targets the first query, it's NOT considered for validation.
             if (!j_entry || j_entry.to_query_id === firstQueryUuid) {
-                // console.log(`[BlendContext:validateJoins] Skipping validation for first query entry: ${j_entry?.to_query_id}`);
                 return false; // Exclude the first query's entry from the invalid list
             }
             // --- END ADDED CHECK ---
@@ -611,16 +554,10 @@ export const BlendContextProvider = ({
             const hasInvalidCondition =
                 j_entry.joins &&
                 j_entry.joins.some((condition) => !validateJoin(condition));
-            // if (hasInvalidCondition) {
-            //   console.log(`[BlendContext:validateJoins] Found invalid condition in entry for: ${j_entry.to_query_id}`);
-            // }
             return hasInvalidCondition;
         });
 
         // Return the array of IQueryJoin entries (excluding the first query) that contain errors
-        console.log(
-            `[BlendContext:validateJoins] Found ${invalid_join_entries.length} invalid join entries (excluding first query).`
-        );
         return invalid_join_entries;
 
         // Now depends on 'queries' to identify the first one, 'joins' to check, and 'validateJoin' helper
@@ -633,6 +570,13 @@ export const BlendContextProvider = ({
         const connection = model_connections[model];
         if (connection) {
             return connection;
+        } else {
+            if (queries.length > 0) {
+                console.error(
+                    'No connection found for the first query, may need to reset model cache',
+                );
+                return connection;
+            }
         }
     }, [model_connections, queries]);
 
