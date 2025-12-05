@@ -166,3 +166,27 @@ def test_get_lookml_with_corrected_dimension_type():
         'dimension: q1.test_count {\n    label: "Test Count"\n    view_label: "Test View"\n    group_label: ""\n    description: ""\n    type: number\n    sql: ${TABLE}.test_count ;;\n  }'
         in lookml_output
     )
+
+def test_blend_field_query_alias_fallback():
+    """Checks that query_alias defaults to query_uuid if None."""
+    field = BlendField(
+        query_uuid="test_uuid",
+        name="test.name",
+        sql_alias="test_name",
+        label_short="Test Name",
+        view_label="Test View",
+        type="string",
+        query_alias=None,  # Explicitly None
+    )
+    assert field.query_alias == "test_uuid"
+
+    field_implicit = BlendField(
+        query_uuid="test_uuid_2",
+        name="test.name",
+        sql_alias="test_name",
+        label_short="Test Name",
+        view_label="Test View",
+        type="string",
+        # query_alias not provided, defaults to None then validator sets it
+    )
+    assert field_implicit.query_alias == "test_uuid_2"
