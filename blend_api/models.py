@@ -377,7 +377,7 @@ class BlendField(BaseModel):
                 "percentile",
                 "percentile_distinct",
                 "running_total",
-            ]:
+            }:
                 logger.warning("Invalid measure only field type", type=self.type)
                 return "string"
             else:
