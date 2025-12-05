@@ -269,7 +269,7 @@ class BlendField(BaseModel):
     query_alias: str | None = Field(default=None)
     name: str = Field(
         pattern=r"^[a-zA-Z][a-zA-Z0-9_]*(\.[a-zA-Z][a-zA-Z0-9_]*)?$"
-    )  # Validates snake_case pattern with zero or one periods
+    )  # Validates lookml field pattern
     sql_alias: str
     label_short: str
     view_label: str
