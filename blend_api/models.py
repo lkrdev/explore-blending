@@ -358,7 +358,7 @@ class BlendField(BaseModel):
         }:
             return cast(TDimensionFieldType, self.type)
         elif self.type in get_args(TMeasureOnlyFieldType):
-            if self.type in [
+            if self.type in {
                 "average",
                 "average_distinct",
                 "median",
@@ -369,9 +369,9 @@ class BlendField(BaseModel):
                 "min",
                 "count",
                 "count_distinct",
-            ]:
+            }:
                 return "number"
-            elif self.type in [
+            elif self.type in {
                 "percent_of_previous",
                 "percent_of_total",
                 "percentile",
