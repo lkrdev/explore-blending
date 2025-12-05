@@ -4,7 +4,7 @@ on: workflow_dispatch
 
 env:
   REGION: us-central1
-  SERVICE_NAME: explore-blend-api-pre-release
+  SERVICE_NAME: explore-blend-api
   APP_NAME: explore-blending
   BUCKET_NAME: ${{ secrets.GCP_BUCKET_NAME }}
 
@@ -40,13 +40,14 @@ jobs:
             --tag ${{ env.IMAGE_NAME }}:${{ env.TAG }} \
             --gcs-log-dir=gs://${{ secrets.GCP_LOGS_BUCKET_NAME }}/${{ env.APP_NAME }}
 
-      - name: Deploy to Cloud Run
+      - name: Deploy to Cloud Run (no traffic)
         run: |
           gcloud run deploy ${{ env.SERVICE_NAME }} \
             --image ${{ env.IMAGE_NAME }}:${{ env.TAG }} \
             --region ${{ env.REGION }} \
             --platform managed \
-            --allow-unauthenticated
+            --allow-unauthenticated \
+            --no-traffic
 
   build-and-upload-frontend:
     runs-on: ubuntu-latest
@@ -93,3 +94,24 @@ jobs:
           path: dist
           destination: ${{ env.BUCKET_NAME }}/apps/${{ env.APP_NAME }}/${{ env.TAG }}
           parent: false
+
+  deployment-summary:
+    needs: [build-and-push, build-and-upload-frontend]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set TAG
+        run: echo "TAG=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+
+      - name: Generate Deployment Artifact
+        run: |
+          echo "CDN Link: https://cdn.lkr.dev/apps/${{ env.APP_NAME }}/${{ env.TAG }}" > deployment-links.txt
+          echo "Cloud Run API Link: https://www.lkr.dev/apps/${{ env.APP_NAME }}/${{ env.TAG }}/api" >> deployment-links.txt
+
+      - name: Upload Deployment Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: deployment-links
+          path: deployment-links.txt
