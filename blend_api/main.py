@@ -92,7 +92,7 @@ def main(request: Request):
     try:
         body = RequestBody(**request.json if request.json else {})
     except Exception as e:
-        return ErrorResponse(str(e) referrer=request.referrer)
+        return ErrorResponse(str(e), referrer=request.referrer)
 
     # was easier to handle a single "create_measures" and apply it to all fields server-side
     if body.create_measures:

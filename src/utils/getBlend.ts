@@ -8,9 +8,12 @@ import {
     PERSONAL_ACCESS_TOKEN_USER_ATTRIBUTE,
     WEBHOOK_SECRET_USER_ATTRIBUTE,
 } from '../constants';
+import { getArtifactKey } from './artifacts';
 import getExploreLabelFromQuery from './explore_label';
 import getQuerySql, { fieldTransform } from './getSQL';
 import { getConnectionDialect, getConnectionModel } from './index';
+
+var stringify = require('fast-stable-stringify');
 
 const EXPLORE_POLL_RETRIES = 30;
 const EXPLORE_POLL_DELAY = 2000;
@@ -155,7 +158,7 @@ export const handleLookMLBlend = async ({
                     type: found.lookml_type,
                     query_uuid: q.uuid,
                     field_type: found.type,
-                    query_alias: aliases[q.uuid] || q.uuid,
+                    query_alias: aliases[q.uuid],
                 });
             }
         });
@@ -241,11 +244,17 @@ export const handleLookMLBlend = async ({
                 const _artifact = await sdk.ok(
                     sdk.update_artifacts(ARTIFACT_NAMESPACE, [
                         {
-                            key: uuid,
-                            value: JSON.stringify({
+                            key: getArtifactKey(
+                                user!.id!,
+                                payload.uuid,
+                                explore_ids,
+                            ),
+                            value: stringify({
                                 queries,
                                 joins,
                                 payload,
+                                user_id: user.id,
+                                explore_ids,
                             }),
                             content_type: 'application/json',
                         },
