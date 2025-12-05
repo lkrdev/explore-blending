@@ -10,7 +10,8 @@
         "prebuild": "npx tsx scripts/generate-entitlements.ts",
         "build": "NODE_ENV=production webpack --mode production",
         "dev": "NODE_ENV=development webpack serve --mode development --config webpack.dev.js",
-        "test": "jest"
+        "test": "jest",
+        "clean": "rm -rf node_modules && npm install"
     },
     "keywords": [],
     "dependencies": {
