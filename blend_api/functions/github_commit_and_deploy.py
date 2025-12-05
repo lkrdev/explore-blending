@@ -1,8 +1,24 @@
 import requests
 from github import Auth, Github
 from structlog import get_logger
+from pydantic import BaseModel
 
 logger = get_logger(__name__)
+
+class ResponseFile(BaseModel):
+    success: bool
+    filename: str
+    repo: str
+    error: str | None = None
+
+class ResponseDeploy(BaseModel):
+    success: bool
+    project_name: str
+    error: str | None = None
+
+class Response(BaseModel):
+    file: ResponseFile
+    deploy: ResponseDeploy
 
 
 def github_commit_and_deploy(
@@ -21,27 +37,36 @@ def github_commit_and_deploy(
     if not repo_name:
         raise ValueError("repo_name is required")
     auth = Auth.Token(personal_access_token)
+
     g = Github(auth=auth)
     filename = f"blends/{lookml_model}/{uuid}.explore.lkml"
-
+    out = Response(
+        file=ResponseFile(success=False, filename=filename, repo=repo_name),
+        deploy=ResponseDeploy(success=False, project_name=project_name),
+    )
     # Get repository
     repo = g.get_repo(repo_name)
     try:
         repo.get_contents("blends")
     except Exception:
-        logger.info("Creating blends directory")
+        logger.debug(f"Creating blends directory", project_name=project_name, repo_name=repo_name)
         repo.create_file("blends/.gitkeep", "Create blends directory", "")
     try:
         repo.get_contents(f"blends/{lookml_model}")
     except Exception:
-        logger.info("Creating model directory")
+        logger.debug(
+            "Creating model directory", 
+            project_name=project_name, 
+            repo_name=repo_name, 
+            lookml_model=lookml_model
+        )
         repo.create_file(
             f"blends/{lookml_model}/.gitkeep", "Create model directory", ""
         )
     try:
         repo.get_contents(f"blends/{lookml_model}/{lookml_model}.model.lkml")
     except Exception:
-        logger.info("Creating model file")
+        logger.debug("Creating model file")
         repo.create_file(
             f"blends/{lookml_model}/{lookml_model}.model.lkml",
             "Create model file",
@@ -58,21 +83,36 @@ def github_commit_and_deploy(
             content=lookml,
             sha=contents.sha,
         )
+        out.file.success = True
     except Exception:
-        logger.info("Creating new blend file")
+        logger.debug(
+            "Creating new blend file", 
+            project_name=project_name, 
+            repo_name=repo_name, 
+            lookml_model=lookml_model, 
+            uuid=uuid, filename=filename
+        )
         # File doesn't exist, create new file
         repo.create_file(path=filename, message=f"Create blend {uuid}", content=lookml)
-        # Call deploy webhook if secret provided
-    logger.info("Calling deploy webhook")
+        out.file.success = True
+    # Call deploy webhook if secret provided
     if webhook_secret:
+        logger.debug("Calling deploy webhook")
         url = f"{sdk_base_url}/webhooks/projects/{project_name}/deploy"
-        response = requests.post(
-            url,
-            headers={
-                "X-Looker-Deploy-Secret": webhook_secret,
-                "Content-Type": "application/json",
-            },
-        )
-        logger.info("Deploy webhook called", response=response.json())
-        response.raise_for_status()
-    return dict(success=True, file_name=f"blends/{lookml_model}/{uuid}.explore.lkml")
+        try:
+            response = requests.post(
+                url,
+                headers={
+                    "X-Looker-Deploy-Secret": webhook_secret,
+                    "Content-Type": "application/json",
+                },
+            )
+            if response and response.status_code != 200:
+                logger.error("Deploy webhook failed", status_code=response.status_code, response=response.text)
+                out.deploy.error = response.text
+            else:
+                out.deploy.success = True
+        except Exception as e:
+            logger.error("Error calling deploy webhook", error=str(e))
+            out.deploy.error = str(e)
+    return out

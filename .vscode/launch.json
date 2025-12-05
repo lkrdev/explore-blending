@@ -5,7 +5,7 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Make Dev",
+            "name": "Debug Functions Framework",
             "type": "debugpy",
             "request": "launch",
             "module": "functions_framework",
@@ -16,6 +16,7 @@
             "env": {
                 "PYTHONPATH": "${workspaceFolder}/blend_api"
             },
+            "python": "${workspaceFolder}/blend_api/.venv/bin/python",
             "console": "integratedTerminal"
         }
     ]

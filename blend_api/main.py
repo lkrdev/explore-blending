@@ -147,13 +147,17 @@ def main(request: Request):
 
     else:
         try:
-            github_commit_and_deploy(
+            response = github_commit_and_deploy(
                 lookml=lookml,
                 sdk_base_url=headers.host_origin,
                 **body.model_dump(),
                 personal_access_token=headers.personal_access_token.get_secret_value(),
                 webhook_secret=headers.webhook_secret.get_secret_value(),
             )
+            if not response.file.success:
+                return ErrorResponse(f"Failed to create file {response.file.filename} in {response.file.repo}: check personal access token user attribute")
+            if not response.deploy.success:
+                return ErrorResponse(f"Failed to deploy Looker project {response.deploy.project_name}: check deploy webhook secret user attribute")
         except Exception as e:
             logger.exception("Error committing and deploying")
             return ErrorResponse(str(e))
