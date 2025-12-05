@@ -20,7 +20,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Set TAG
-        run: echo "TAG=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+        run: echo "TAG=v$(git rev-parse --short HEAD)" >> $GITHUB_ENV
       - name: Set IMAGE_NAME
         run: echo "IMAGE_NAME=${{ env.REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ env.APP_NAME }}/${{ env.SERVICE_NAME }}" >> $GITHUB_ENV
       - name: Authenticate to Google Cloud
@@ -61,7 +61,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Set TAG
-        run: echo "TAG=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+        run: echo "TAG=v$(git rev-parse --short HEAD)" >> $GITHUB_ENV
 
       - name: Install and use Node.js via nvm
         run: |
@@ -104,7 +104,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Set TAG
-        run: echo "TAG=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+        run: echo "TAG=v$(git rev-parse --short HEAD)" >> $GITHUB_ENV
 
       - name: Generate Deployment Artifact
         run: |
