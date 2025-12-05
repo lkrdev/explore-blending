@@ -1,5 +1,5 @@
 import { ExtensionSDK } from '@looker/extension-sdk';
-import { Looker40SDK } from '@looker/sdk';
+import { IUpdateArtifact, Looker40SDK } from '@looker/sdk';
 import {
     API_URL,
     ARTIFACT_NAMESPACE,
@@ -49,6 +49,45 @@ interface HandleLookMLBlendParams {
     addStatus: (status: keyof typeof STATUS_MESSAGES, done?: boolean) => void;
 }
 
+const handleServerProxy = async ({
+    headers,
+    payload,
+    api_url,
+    extension,
+}: {
+    headers: Record<string, string>;
+    payload: IBlendPayload;
+    api_url: string;
+    extension: ExtensionSDK;
+}) => {
+    try {
+        const r = await extension.serverProxy(api_url, {
+            method: 'POST',
+            body: JSON.stringify(payload),
+            headers: headers,
+        });
+        return r;
+    } catch (e) {
+        console.error(e);
+        throw e;
+    }
+};
+
+const handleUpdateArtifacts = async ({
+    sdk,
+    body,
+}: {
+    sdk: Looker40SDK;
+    body: IUpdateArtifact[];
+}) => {
+    // currently we are tracking artifacts, but not requerying them. Swallowing on purpose
+    try {
+        await sdk.ok(sdk.update_artifacts(ARTIFACT_NAMESPACE, body));
+    } catch (e) {
+        console.error('Failed to update artifact:', e);
+    }
+};
+
 export const handleLookMLBlend = async ({
     sdk,
     extension,
@@ -63,14 +102,18 @@ export const handleLookMLBlend = async ({
     dry_run,
     add_access_grant,
     addStatus,
-}: HandleLookMLBlendParams): Promise<{
-    success: boolean;
-    error?: string;
-    lookml?: string;
-    explore_id?: string;
-    explore_name?: string;
-    lookml_model_name?: string;
-}> => {
+}: HandleLookMLBlendParams): Promise<
+    | {
+          success: boolean;
+          error?: string;
+          lookml?: string;
+          explore_id?: string;
+          explore_name?: string;
+          lookml_model_name?: string;
+          explore_url?: string;
+      }
+    | undefined
+> => {
     let connection_name = first_query_connection;
     addStatus('get_model_information');
 
@@ -94,6 +137,10 @@ export const handleLookMLBlend = async ({
                 'Failed to get connection from lookml_model_explore:',
                 e,
             );
+            return {
+                success: false,
+                error: 'Failed to get connection from lookml_model_explore',
+            };
         }
     }
 
@@ -220,49 +267,40 @@ export const handleLookMLBlend = async ({
             CLIENT_SECRET_USER_ATTRIBUTE,
         );
     }
+    const api_url = config.override_api?.length ? config.override_api : API_URL;
     try {
-        const api_url = config.override_api?.length
-            ? config.override_api
-            : API_URL;
-        const r = await extension.serverProxy(api_url, {
-            method: 'POST',
-            body: JSON.stringify(payload),
-            headers: headers,
+        const r = await handleServerProxy({
+            headers,
+            payload,
+            api_url,
+            extension,
         });
-        if (!r.body.success) {
-            return {
-                success: false,
-                error: r.body.error,
-            };
-        }
-        if (dry_run) {
+        if (r.body.ok && dry_run) {
             return { success: true, ...r.body };
-        }
-
-        if (r.body?.success === true) {
-            try {
-                const _artifact = await sdk.ok(
-                    sdk.update_artifacts(ARTIFACT_NAMESPACE, [
-                        {
-                            key: getArtifactKey(
-                                user!.id!,
-                                payload.uuid,
-                                explore_ids,
-                            ),
-                            value: stringify({
-                                queries,
-                                joins,
-                                payload,
-                                user_id: user.id,
-                                explore_ids,
-                            }),
-                            content_type: 'application/json',
-                        },
-                    ]),
-                );
-            } catch (e) {
-                console.error(e);
-            }
+        } else if (!r.body.ok) {
+            return { success: false, error: r.body.error };
+        } else if (r.body.ok && !dry_run) {
+            await handleUpdateArtifacts({
+                sdk,
+                body: [
+                    {
+                        key: getArtifactKey(
+                            user!.id!,
+                            payload.uuid,
+                            explore_ids,
+                        ),
+                        value: stringify({
+                            queries,
+                            joins,
+                            payload,
+                            user_id: user.id,
+                            explore_ids,
+                            updated_at: new Date().toISOString(),
+                        }),
+                        content_type: 'application/json',
+                    },
+                ],
+            });
             for (var i = 0; i < EXPLORE_POLL_RETRIES; i++) {
                 try {
                     const _explore = await sdk.ok(
@@ -282,14 +320,7 @@ export const handleLookMLBlend = async ({
                 }
             }
             extension.openBrowserWindow(r.body.explore_url, '_blank');
-            extension.updateLocation;
             return { success: true, ...r.body };
-        } else {
-            // @ts-ignore
-            return {
-                success: false,
-                error: r.body.error,
-            };
         }
     } catch (e) {
         console.error(e);

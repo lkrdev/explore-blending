@@ -56,7 +56,7 @@ LookML Mode takes all the explore queries and the adhoc joins and puts them into
 
 1. Provide the Github repository where the LookML files are stored
 2. The name of the project that will house the new LookML files and is attached to the Github repository
-3. Configure user attributes for a Github Personal Access Token (Classic) and your Looker project's webhook deploy secret.
+3. Configure user attributes for a Github Personal Access Token (Classic) or Fine grained token and your Looker project's webhook deploy secret.
 
 ## Use cases
 
@@ -78,6 +78,27 @@ API Credentials required
 -   -   `https://www.lkr.dev/apps/explore-blending/*` or https://your.override.api/*
 
 ## Hosting this yourself
+
+## Securing your user attribute secrets
+The application can be setup with several secrets (Deploy Webhook, Github Personal Access Token, and Looker Client Id/Secret). It is recommended when setting up the extension and the user attributes, to use the settings:
+
+- User Access: None
+- Hide Values: Yes
+- Domain Allowlist: `https://www.lkr.dev/apps/explore-blending/*` or https://your.override.api/*
+
+This will ensure that the secrets can not be exposed by anyone besides the URLs they are being sent to.
+
+![Looker User Attribute Secrets](assets/secrets-user-attributes.png)
+
+## Github
+### Fine grained token
+
+If using a fine grained token, at a minimum make sure you have the following scopes enabled
+
+- Repository Metadata (Read)
+- Repository Contents (Read & Write)
+
+![Github Fine Grained Token](assets/github-finegrainedtoken.png)
 
 ## Versioning
 
