@@ -45,6 +45,7 @@ jobs:
           gcloud run deploy ${{ env.SERVICE_NAME }} \
             --image ${{ env.IMAGE_NAME }}:${{ env.TAG }} \
             --region ${{ env.REGION }} \
+            --tag ${{ env.TAG }} \
             --platform managed \
             --allow-unauthenticated \
             --no-traffic

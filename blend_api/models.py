@@ -333,12 +333,32 @@ class BlendField(BaseModel):
 
     @property
     def forced_dimension_type(self) -> TDimensionFieldType:
+        if self.type.startswith("date_"):
+            if self.type in [
+                "date_month_num",
+                "date_year",
+                "date_day_of_month",
+                "date_day_of_week_index",
+                "date_day_of_year",
+                "date_fiscal_month_num",
+                "date_fiscal_year",
+                "date_hour_of_day",
+                "date_week_of_year",
+            ]:
+                return "number"
+            elif self.type == "date_date":
+                return "date"
+            elif self.type == "date_time":
+                return "date_time"
+            else:
+                return "string"
+
         if self.type in {
             arg for t in get_args(TDimensionFieldType) for arg in get_args(t)
         }:
             return cast(TDimensionFieldType, self.type)
         elif self.type in get_args(TMeasureOnlyFieldType):
-            if self.type in [
+            if self.type in {
                 "average",
                 "average_distinct",
                 "median",
@@ -349,15 +369,15 @@ class BlendField(BaseModel):
                 "min",
                 "count",
                 "count_distinct",
-            ]:
+            }:
                 return "number"
-            elif self.type in [
+            elif self.type in {
                 "percent_of_previous",
                 "percent_of_total",
                 "percentile",
                 "percentile_distinct",
                 "running_total",
-            ]:
+            }:
                 logger.warning("Invalid measure only field type", type=self.type)
                 return "string"
             else:
