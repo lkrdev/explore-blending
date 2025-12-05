@@ -155,7 +155,7 @@ export const handleLookMLBlend = async ({
                     type: found.lookml_type,
                     query_uuid: q.uuid,
                     field_type: found.type,
-                    query_alias: aliases[q.uuid],
+                    query_alias: aliases[q.uuid] || q.uuid,
                 });
             }
         });

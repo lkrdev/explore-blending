@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 from enum import Enum
 from typing import List, Literal, Optional, Self, Set, Union, cast, get_args
 
-from pydantic import BaseModel, Field, SecretStr
+from pydantic import BaseModel, Field, SecretStr, model_validator
 from structlog import get_logger
 from werkzeug import Request
 
@@ -266,9 +266,9 @@ class AccessGrant(BaseModel):
 
 class BlendField(BaseModel):
     query_uuid: str
-    query_alias: str
+    query_alias: str | None = Field(default=None)
     name: str = Field(
-        pattern=r"^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)?$"
+        pattern=r"^[a-zA-Z][a-zA-Z0-9_]*(\.[a-zA-Z][a-zA-Z0-9_]*)?$"
     )  # Validates snake_case pattern with zero or one periods
     sql_alias: str
     label_short: str
@@ -278,6 +278,12 @@ class BlendField(BaseModel):
     type: TDimensionFieldType | TMeasureFieldType
     create_measure: bool = Field(default=False)
     field_type: Literal["dimension", "measure"] = Field(default="dimension")
+
+    @model_validator(mode="after")
+    def set_query_alias(self) -> Self:
+        if self.query_alias is None:
+            self.query_alias = self.query_uuid
+        return self
 
     @property
     def uuid_or_alias(self) -> str:
