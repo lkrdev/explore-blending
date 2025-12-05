@@ -55,8 +55,8 @@ const handleServerProxy = async ({
     api_url,
     extension,
 }: {
-    headers: any;
-    payload: any;
+    headers: Record<string, string>;
+    payload: IBlendPayload;
     api_url: string;
     extension: ExtensionSDK;
 }) => {
@@ -80,6 +80,7 @@ const handleUpdateArtifacts = async ({
     sdk: Looker40SDK;
     body: IUpdateArtifact[];
 }) => {
+    // currently we are tracking artifacts, but not requerying them. Swallowing on purpose
     try {
         await sdk.ok(sdk.update_artifacts(ARTIFACT_NAMESPACE, body));
     } catch (e) {
@@ -101,15 +102,18 @@ export const handleLookMLBlend = async ({
     dry_run,
     add_access_grant,
     addStatus,
-}: HandleLookMLBlendParams): Promise<{
-    success: boolean;
-    error?: string;
-    lookml?: string;
-    explore_id?: string;
-    explore_name?: string;
-    lookml_model_name?: string;
-    explore_url?: string;
-}> => {
+}: HandleLookMLBlendParams): Promise<
+    | {
+          success: boolean;
+          error?: string;
+          lookml?: string;
+          explore_id?: string;
+          explore_name?: string;
+          lookml_model_name?: string;
+          explore_url?: string;
+      }
+    | undefined
+> => {
     let connection_name = first_query_connection;
     addStatus('get_model_information');
 
@@ -291,6 +295,7 @@ export const handleLookMLBlend = async ({
                             payload,
                             user_id: user.id,
                             explore_ids,
+                            updated_at: new Date().toISOString(),
                         }),
                         content_type: 'application/json',
                     },

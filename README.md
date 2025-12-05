@@ -79,6 +79,17 @@ API Credentials required
 
 ## Hosting this yourself
 
+## Securing your user attribute secrets
+The application can be setup with several secrets (Deploy Webhook, Github Personal Access Token, and Looker Client Id/Secret). It is recommended when setting up the extension and the user attributes, to use the settings:
+
+- User Access: None
+- Hide Values: Yes
+- Domain Allowlist: `https://www.lkr.dev/apps/explore-blending/*` or https://your.override.api/*
+
+This will ensure that the secrets can not be exposed by anyone besides the URLs they are being sent to.
+
+![Looker User Attribute Secrets](assets/secrets-user-attributes.png)
+
 ## Github
 ### Fine grained token
 

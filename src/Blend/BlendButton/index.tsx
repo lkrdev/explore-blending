@@ -58,10 +58,13 @@ const BlendButton: React.FC<BlendButtonProps> = ({}) => {
         });
     };
 
-    const handleLookMLBlendWrapper: () => Promise<{
-        success: boolean;
-        error?: string;
-    }> = async () => {
+    const handleLookMLBlendWrapper: () => Promise<
+        | {
+              success: boolean;
+              error?: string;
+          }
+        | undefined
+    > = async () => {
         const result = await handleLookMLBlend({
             sdk,
             extension,
@@ -91,6 +94,10 @@ const BlendButton: React.FC<BlendButtonProps> = ({}) => {
         }
         if (config.lookml) {
             const result = await handleLookMLBlendWrapper();
+            if (!result) {
+                loading.setFalse();
+                return;
+            }
             if (!result.success) {
                 setError(result.error);
             }
