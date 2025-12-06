@@ -6,6 +6,7 @@ import useSWR from 'swr';
 import CopyClipboard from '../../../components/CopyClipboard';
 import useSdk from '../../../hooks/useSdk';
 import { useSettings } from '../../../SettingsContext';
+import { getRandomPrefix } from '../../../utils/funPhrases';
 import { STATUS_MESSAGES } from '../../../utils/getBlend';
 import getQuerySql from '../../../utils/getSQL';
 import { useBlendContext } from '../../Context';
@@ -13,22 +14,29 @@ var stringify = require('fast-stable-stringify');
 
 const Sql = () => {
     const { config, can_update_settings } = useSettings();
-    const [status, setStatus] = useState<{ message: string; done: boolean }[]>(
-        [],
-    );
+    const [status, setStatus] = useState<
+        { key: string; message: string; done: boolean }[]
+    >([]);
     const { queries, joins, first_query_connection } = useBlendContext();
     const sdk = useSdk();
 
-    const addStatus = (status: keyof typeof STATUS_MESSAGES, done: boolean) => {
+    const addStatus = (
+        statusKey: keyof typeof STATUS_MESSAGES,
+        done: boolean,
+    ) => {
         setStatus((p) => {
-            const new_p: { message: string; done: boolean }[] = [...p];
-            const index = new_p.findIndex(
-                (s) => s.message === STATUS_MESSAGES[status],
-            );
+            const new_p = [...p];
+            const index = new_p.findIndex((s) => s.key === statusKey);
             if (index !== -1) {
-                set(new_p, index, { message: STATUS_MESSAGES[status], done });
+                set(new_p, index, { ...new_p[index], done });
             } else {
-                new_p.push({ message: STATUS_MESSAGES[status], done });
+                new_p.push({
+                    key: statusKey,
+                    message: `${getRandomPrefix()} ${
+                        STATUS_MESSAGES[statusKey]
+                    }`,
+                    done,
+                });
             }
             return new_p;
         });

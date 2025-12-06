@@ -19,11 +19,12 @@ const EXPLORE_POLL_RETRIES = 30;
 const EXPLORE_POLL_DELAY = 2000;
 
 export const STATUS_MESSAGES = {
-    get_explore_connection: 'Getting connection information',
-    get_query_sql: 'Getting query SQL',
-    get_model_information: 'Getting model information',
-    get_model_explore: 'Getting model explore',
-    get_connection_meta: 'Getting connection meta',
+    get_explore_connection: 'connection information',
+    get_query_sql: 'SQL queries from explores',
+    get_model_information: 'model information',
+    get_model_explore: 'model explore',
+    get_connection_meta: 'connection meta',
+    get_new_explore_data: 'new explore data',
 };
 
 interface HandleLookMLBlendParams {
@@ -88,6 +89,14 @@ const handleUpdateArtifacts = async ({
     }
 };
 
+const getErrorMessage = (e: unknown): string => {
+    let msg = e instanceof Error ? e.message : String(e);
+    if (msg.startsWith('Error: ')) {
+        msg = msg.slice(7);
+    }
+    return msg;
+};
+
 export const handleLookMLBlend = async ({
     sdk,
     extension,
@@ -139,7 +148,7 @@ export const handleLookMLBlend = async ({
             );
             return {
                 success: false,
-                error: 'Failed to get connection from lookml_model_explore',
+                error: getErrorMessage(e),
             };
         }
     }
@@ -301,6 +310,7 @@ export const handleLookMLBlend = async ({
                     },
                 ],
             });
+            addStatus('get_new_explore_data');
             for (var i = 0; i < EXPLORE_POLL_RETRIES; i++) {
                 try {
                     const _explore = await sdk.ok(
@@ -319,6 +329,7 @@ export const handleLookMLBlend = async ({
                     );
                 }
             }
+            addStatus('get_new_explore_data', true);
             extension.openBrowserWindow(r.body.explore_url, '_blank');
             return { success: true, ...r.body };
         }
@@ -326,7 +337,7 @@ export const handleLookMLBlend = async ({
         console.error(e);
         return {
             success: false,
-            error: String(e),
+            error: getErrorMessage(e),
         };
     }
 };

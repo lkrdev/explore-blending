@@ -8,14 +8,15 @@ import useExtensionSdk from '../../../hooks/useExtensionSdk';
 import useSdk from '../../../hooks/useSdk';
 import { useSearchParams } from '../../../hooks/useSearchParams';
 import { useSettings } from '../../../SettingsContext';
+import { getRandomPrefix } from '../../../utils/funPhrases';
 import { handleLookMLBlend, STATUS_MESSAGES } from '../../../utils/getBlend';
 import { useBlendContext } from '../../Context';
 var stringify = require('fast-stable-stringify');
 
 const Lookml = ({ display = true }: { display?: boolean }) => {
-    const [status, setStatus] = useState<{ message: string; done: boolean }[]>(
-        [],
-    );
+    const [status, setStatus] = useState<
+        { key: string; message: string; done: boolean }[]
+    >([]);
     const { queries, joins, first_query_connection } = useBlendContext();
     const sdk = useSdk();
     const extension = useExtensionSdk();
@@ -26,18 +27,22 @@ const Lookml = ({ display = true }: { display?: boolean }) => {
     const should_run = queries.length > 0 && first_query_connection?.length;
 
     const addStatus = (
-        status: keyof typeof STATUS_MESSAGES,
+        statusKey: keyof typeof STATUS_MESSAGES,
         done: boolean = false,
     ) => {
         setStatus((p) => {
             const new_p = [...p];
-            const index = new_p.findIndex(
-                (s) => s.message === STATUS_MESSAGES[status],
-            );
+            const index = new_p.findIndex((s) => s.key === statusKey);
             if (index > -1) {
-                set(new_p, index, { message: STATUS_MESSAGES[status], done });
+                set(new_p, index, { ...new_p[index], done });
             } else {
-                new_p.push({ message: STATUS_MESSAGES[status], done });
+                new_p.push({
+                    key: statusKey,
+                    message: `${getRandomPrefix()} ${
+                        STATUS_MESSAGES[statusKey]
+                    }`,
+                    done,
+                });
             }
             return new_p;
         });

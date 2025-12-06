@@ -17,6 +17,7 @@ import LoadingButton from '../../components/ProgressButton'; // Assuming Loading
 import useSdk from '../../hooks/useSdk';
 import { useSettings } from '../../SettingsContext';
 import { useBlendButtonContext } from './BlendButtonContext';
+import { StatusMessage } from './StatusMessage';
 import TabsComponent, { SelectedTabComponent } from './Tabs';
 import Lookml from './Tabs/Lookml';
 
@@ -32,20 +33,16 @@ const StyledDialogHeader = styled(DialogHeader)`
 `;
 
 interface BlendDialogProps {
-    error: string | undefined;
-    setError: React.Dispatch<React.SetStateAction<string | undefined>>;
     onClose: () => void;
     handleBlend: () => Promise<void>;
 }
 
 export const BlendDialog: React.FC<BlendDialogProps> = ({
-    error,
-    setError,
     onClose,
     handleBlend,
 }) => {
     const sdk = useSdk();
-    const { toggle, loading, invalid_joins } = useBlendButtonContext();
+    const { toggle, loading, invalid_joins, error } = useBlendButtonContext();
     const { config } = useSettings();
 
     const workspace = useSWR('workspace', () => {
@@ -65,34 +62,38 @@ export const BlendDialog: React.FC<BlendDialogProps> = ({
 
             <DialogFooter>
                 <SpaceVertical gap='small'>
-                    {error && <Label color='critical'>{error}</Label>}
                     {invalid_joins.length > 0 && (
                         <Label color='critical'>
                             Please fix your invalid joins
                         </Label>
                     )}
-                    <Space between justify='end'>
-                        <LoadingButton
-                            fullWidth
-                            is_loading={loading.value}
-                            disabled={loading.value || invalid_joins.length > 0}
-                            color='key'
-                            onClick={async () => {
-                                loading.setTrue();
-                                await handleBlend();
-                                onClose();
-                                loading.setFalse();
-                            }}
-                        >
-                            Blend
-                        </LoadingButton>
-                        {workspace?.data?.workspace_id === 'dev' &&
-                        config?.lookml ? (
-                            <Tooltip content='It is not recommended to blend in development mode, your developer copy may not have the new LookML model created'>
-                                <Icon icon={<Warning size={24} />} />
-                            </Tooltip>
-                        ) : null}
-                    </Space>
+                    <SpaceVertical gap='none'>
+                        <StatusMessage />
+                        <Space between justify='end'>
+                            <LoadingButton
+                                fullWidth
+                                is_loading={loading.value}
+                                disabled={
+                                    loading.value || invalid_joins.length > 0
+                                }
+                                color='key'
+                                onClick={async () => {
+                                    loading.setTrue();
+                                    await handleBlend();
+                                    onClose();
+                                    loading.setFalse();
+                                }}
+                            >
+                                Blend
+                            </LoadingButton>
+                            {workspace?.data?.workspace_id === 'dev' &&
+                            config?.lookml ? (
+                                <Tooltip content='It is not recommended to blend in development mode, your developer copy may not have the new LookML model created'>
+                                    <Icon icon={<Warning size={24} />} />
+                                </Tooltip>
+                            ) : null}
+                        </Space>
+                    </SpaceVertical>
                 </SpaceVertical>
             </DialogFooter>
         </Dialog>
