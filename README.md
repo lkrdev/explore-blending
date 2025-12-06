@@ -33,7 +33,7 @@ application: explore_blending {
       "connection",
       "dashboard",
       "all_connections",
-      "get_artifact",
+      "artifact",
       "update_artifacts",
       "session"
     ]

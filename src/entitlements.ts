@@ -34,4 +34,4 @@ export interface Entitlements {
     scoped_user_attributes: string[];
 }
 
-export const required_entitlements: Partial<Entitlements> = {"core_api_methods":["me","session","all_lookml_models","query","lookml_model_explore","run_query","create_sql_query","run_sql_query","query_for_slug","search_dashboards","create_dashboard_element","connection","dashboard","all_connections","get_artifact","update_artifacts","session"],"external_api_urls":["https://www.lkr.dev/apps/explore-blending/api"],"local_storage":true,"navigation":true,"new_window":true,"use_clipboard":true,"use_embeds":true,"use_form_submit":true};
+export const required_entitlements: Partial<Entitlements> = {"core_api_methods":["me","session","all_lookml_models","query","lookml_model_explore","run_query","create_sql_query","run_sql_query","query_for_slug","search_dashboards","create_dashboard_element","connection","dashboard","all_connections","artifact","update_artifacts","session"],"external_api_urls":["https://www.lkr.dev/apps/explore-blending/api"],"local_storage":true,"navigation":true,"new_window":true,"use_clipboard":true,"use_embeds":true,"use_form_submit":true};
