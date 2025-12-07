@@ -1,62 +1,43 @@
-import { IconButton, Label, Space, SpaceVertical } from '@looker/components';
+import { IconButton, Space, SpaceVertical } from '@looker/components';
 import { JoinInner } from '@styled-icons/material';
-import { set } from 'lodash';
-import React, { useState } from 'react';
+import React from 'react';
 import { useTheme } from 'styled-components';
-import { useBoolean } from 'usehooks-ts';
 import { useAppContext } from '../../AppContext';
 import LoadingButton from '../../components/ProgressButton';
 import useExtensionSdk from '../../hooks/useExtensionSdk';
 import useSdk from '../../hooks/useSdk';
 import { useSearchParams } from '../../hooks/useSearchParams';
 import { useSettings } from '../../SettingsContext';
-import {
-    handleBlend,
-    handleLookMLBlend,
-    STATUS_MESSAGES,
-} from '../../utils/getBlend';
+import { handleBlend, handleLookMLBlend } from '../../utils/getBlend';
 import { useBlendContext } from '../Context';
 import BlendButtonProvider, {
     useBlendButtonContext,
 } from './BlendButtonContext';
 import { BlendDialog } from './BlendDialog';
+import { StatusMessage } from './StatusMessage';
 
 interface BlendButtonProps {}
 
 const BlendButton: React.FC<BlendButtonProps> = ({}) => {
-    const [status, setStatus] = useState<{ message: string; done: boolean }[]>(
-        []
-    );
-    const { queries, joins, first_query_connection } = useBlendContext();
-    const { toggle, setToggle, invalid_joins, invalid_joins_text } =
-        useBlendButtonContext();
+    const {
+        toggle,
+        setToggle,
+        invalid_joins,
+        invalid_joins_text,
+        addStatus,
+        setSuccess,
+        setError,
+        loading,
+        resetStatus,
+    } = useBlendButtonContext();
     const theme = useTheme();
-    const loading = useBoolean(false);
     const sdk = useSdk();
     const extension = useExtensionSdk();
     const { lookerHostData } = extension;
     const { search_params } = useSearchParams();
     const { getExploreField, user } = useAppContext();
     const { config, getUserCommitComment } = useSettings();
-    const [error, setError] = useState<string | undefined>();
-
-    const addStatus = (
-        status: keyof typeof STATUS_MESSAGES,
-        done: boolean = false
-    ) => {
-        setStatus((p) => {
-            const new_p: { message: string; done: boolean }[] = [...p];
-            const index = new_p.findIndex(
-                (s) => s.message === STATUS_MESSAGES[status]
-            );
-            if (index > -1) {
-                set(new_p, index, { message: STATUS_MESSAGES[status], done });
-            } else {
-                new_p.push({ message: STATUS_MESSAGES[status], done });
-            }
-            return new_p;
-        });
-    };
+    const { queries, joins, first_query_connection } = useBlendContext();
 
     const handleLookMLBlendWrapper: () => Promise<
         | {
@@ -86,6 +67,8 @@ const BlendButton: React.FC<BlendButtonProps> = ({}) => {
 
     const handleBlendWrapper = async () => {
         setError(undefined);
+        setSuccess(false);
+        resetStatus();
         loading.setTrue();
         if (!config) {
             console.error('No config available');
@@ -99,7 +82,9 @@ const BlendButton: React.FC<BlendButtonProps> = ({}) => {
                 return;
             }
             if (!result.success) {
-                setError(result.error);
+                setError(result.error || 'Unknown error');
+            } else {
+                setSuccess(true);
             }
             loading.setFalse();
             return;
@@ -115,24 +100,27 @@ const BlendButton: React.FC<BlendButtonProps> = ({}) => {
             lookerHostData,
         });
         if (!result.success) {
-            setError(result.error);
+            setError(result.error || 'Unknown error');
+        } else {
+            setSuccess(true);
         }
         loading.setFalse();
     };
 
     return (
-        <SpaceVertical width="100%" gap="xsmall">
-            {error && <Label>{error}</Label>}
-            <Space align="center" gap="small">
+        <SpaceVertical width='100%' gap='xsmall'>
+            {toggle === false && <StatusMessage />}
+            <Space align='center' gap='small'>
                 {' '}
                 <LoadingButton
+                    disabled={loading.value}
                     is_loading={loading.value}
                     onClick={() => setToggle('queries')}
                 >
                     Blend
                 </LoadingButton>
                 <IconButton
-                    size="medium"
+                    size='medium'
                     onClick={() => setToggle('joins')}
                     icon={
                         <JoinInner
@@ -149,8 +137,6 @@ const BlendButton: React.FC<BlendButtonProps> = ({}) => {
             </Space>
             {toggle && (
                 <BlendDialog
-                    error={error}
-                    setError={setError}
                     onClose={() => setToggle(false)}
                     handleBlend={handleBlendWrapper}
                 />

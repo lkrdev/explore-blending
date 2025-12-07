@@ -1,5 +1,7 @@
 import React, { createContext, useContext, useState } from 'react';
 import { useBoolean } from 'usehooks-ts';
+import { getRandomPrefix } from '../../utils/funPhrases';
+import { STATUS_MESSAGES } from '../../utils/getBlend';
 import { useBlendContext } from '../Context';
 
 export type TToggle = false | 'queries' | 'joins' | 'sql' | 'lookml';
@@ -11,6 +13,13 @@ interface IBlendButtonContext {
     invalid_joins_text: string;
     disabled: boolean;
     loading: ReturnType<typeof useBoolean>;
+    status: { key: string; message: string; done: boolean }[];
+    addStatus: (status: keyof typeof STATUS_MESSAGES, done?: boolean) => void;
+    resetStatus: () => void;
+    error: string | undefined;
+    setError: React.Dispatch<React.SetStateAction<string | undefined>>;
+    success: boolean;
+    setSuccess: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
 const BlendButtonContext = createContext<IBlendButtonContext>({} as any);
@@ -28,6 +37,40 @@ const BlendButtonProvider = ({ children }: { children: React.ReactNode }) => {
     const [toggle, setToggle] = useState<TToggle>(false);
     const loading = useBoolean(false);
     const { validateJoins, queries } = useBlendContext();
+    const [status, setStatus] = useState<
+        { key: string; message: string; done: boolean }[]
+    >([]);
+    const [error, setError] = useState<string | undefined>();
+    const [success, setSuccess] = useState<boolean>(false);
+
+    const addStatus = (
+        statusKey: keyof typeof STATUS_MESSAGES,
+        done: boolean = false,
+    ) => {
+        setStatus((p) => {
+            const index = p.findIndex((s) => s.key === statusKey);
+            if (index > -1) {
+                return p.map((item, i) =>
+                    i === index ? { ...item, done } : item,
+                );
+            }
+            return [
+                ...p,
+                {
+                    key: statusKey,
+                    message: `${getRandomPrefix()} ${
+                        STATUS_MESSAGES[statusKey]
+                    }`,
+                    done,
+                },
+            ];
+        });
+    };
+
+    const resetStatus = () => {
+        setStatus([]);
+    };
+
     const can_blend = queries.length > 1;
     const invalid_joins = validateJoins();
     const invalid_joins_text =
@@ -46,6 +89,13 @@ const BlendButtonProvider = ({ children }: { children: React.ReactNode }) => {
                 invalid_joins_text,
                 disabled,
                 loading,
+                status,
+                addStatus,
+                resetStatus,
+                error,
+                setError,
+                success,
+                setSuccess,
             }}
         >
             {children}
