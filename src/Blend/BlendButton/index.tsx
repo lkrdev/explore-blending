@@ -109,10 +109,11 @@ const BlendButton: React.FC<BlendButtonProps> = ({}) => {
 
     return (
         <SpaceVertical width='100%' gap='xsmall'>
-            <StatusMessage />
+            {toggle === false && <StatusMessage />}
             <Space align='center' gap='small'>
                 {' '}
                 <LoadingButton
+                    disabled={loading.value}
                     is_loading={loading.value}
                     onClick={() => setToggle('queries')}
                 >
