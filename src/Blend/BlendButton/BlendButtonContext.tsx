@@ -1,4 +1,3 @@
-import { set } from 'lodash';
 import React, { createContext, useContext, useState } from 'react';
 import { useBoolean } from 'usehooks-ts';
 import { getRandomPrefix } from '../../utils/funPhrases';
@@ -49,23 +48,22 @@ const BlendButtonProvider = ({ children }: { children: React.ReactNode }) => {
         done: boolean = false,
     ) => {
         setStatus((p) => {
-            const new_p = [...p];
-            const index = new_p.findIndex((s) => s.key === statusKey);
+            const index = p.findIndex((s) => s.key === statusKey);
             if (index > -1) {
-                set(new_p, index, {
-                    ...new_p[index],
-                    done,
-                });
-            } else {
-                new_p.push({
+                return p.map((item, i) =>
+                    i === index ? { ...item, done } : item,
+                );
+            }
+            return [
+                ...p,
+                {
                     key: statusKey,
                     message: `${getRandomPrefix()} ${
                         STATUS_MESSAGES[statusKey]
                     }`,
                     done,
-                });
-            }
-            return new_p;
+                },
+            ];
         });
     };
 

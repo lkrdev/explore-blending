@@ -20,7 +20,6 @@ const MessageText = styled.div<{
     font-size: ${({ theme }) => theme.fontSizes.small};
     font-weight: ${({ theme }) => theme.fontWeights.semiBold};
     text-align: center;
-    padding: 0 ${({ theme }) => theme.space.xsmall};
     pointer-events: none;
     opacity: 0;
     animation: ${({ isVisible, shouldAnimateExit }) =>
@@ -47,41 +46,21 @@ export const StatusMessage: React.FC = () => {
     const processingRef = useRef(false);
     const lastProcessedMessageRef = useRef<string | null>(null);
 
-    // Handle Error
+    // Handle status updates, errors, and success
     useEffect(() => {
+        // Handle Error
         if (error) {
-            // Clear queue and show error immediately
             queueRef.current = [];
             setCurrentMessage(error);
             setMessageType('error');
             setShouldAnimateExit(true);
             setIsVisible(true);
-            processingRef.current = false; // Stop queue processing
+            processingRef.current = false;
+            return;
         }
-    }, [error]);
 
-    // Handle Success
-    useEffect(() => {
-        if (success && !error) {
-            // Add success to queue or show immediately?
-            // User said "final status message".
-            // Let's append to queue to ensure previous steps finish showing?
-            // Or just show immediately if queue is empty?
-            // If we append, it might take a while if queue is long.
-            // But usually steps are fast.
-            // Let's append "Success!" to queue, but mark it as special.
-            // Actually, we can just push "Success!" to queue and handle type change when it's processed.
-            // But we need to know it's a "success" type message.
-            // Let's just use a special string or flag.
-            // Simpler: If success is true, we wait for queue to empty, then show success.
-            // We can check this in processQueue.
-        }
-    }, [success, error]);
-
-    // Update queue when status changes
-    useEffect(() => {
+        // Handle Reset
         if (status.length === 0) {
-            // Reset state if status is cleared
             setCurrentMessage(null);
             setMessageType('info');
             setIsVisible(false);
@@ -92,8 +71,7 @@ export const StatusMessage: React.FC = () => {
             return;
         }
 
-        if (error) return; // Ignore status updates if error exists
-
+        // Update Queue
         const activeStatus = status.filter((s) => !s.done);
         if (activeStatus.length > 0) {
             const latest = activeStatus[activeStatus.length - 1].message;
@@ -102,10 +80,14 @@ export const StatusMessage: React.FC = () => {
                 !queueRef.current.includes(latest)
             ) {
                 queueRef.current.push(latest);
-                processQueue();
             }
         }
-    }, [status, error]);
+
+        // Trigger Processing
+        if (!processingRef.current) {
+            processQueue();
+        }
+    }, [status, error, success]);
 
     const processQueue = async () => {
         if (processingRef.current || error) return;
@@ -199,19 +181,8 @@ export const StatusMessage: React.FC = () => {
         }
     };
 
-    // Trigger processQueue when status changes to "all done" or success changes
-    useEffect(() => {
-        if (!processingRef.current) {
-            processQueue();
-        }
-    }, [status, success]);
-
     if (!currentMessage && !isVisible) return null;
-    console.log({
-        currentMessage,
-        queue: queueRef.current,
-        processing: processingRef.current,
-    });
+
     return (
         <MessageText
             isVisible={isVisible}
