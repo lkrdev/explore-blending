@@ -100,7 +100,7 @@ const BlendButton: React.FC<BlendButtonProps> = ({}) => {
             lookerHostData,
         });
         if (!result.success) {
-            setError(result.error);
+            setError(result.error || 'Unknown error');
         } else {
             setSuccess(true);
         }

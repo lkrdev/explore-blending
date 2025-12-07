@@ -91,10 +91,7 @@ const handleUpdateArtifacts = async ({
 
 const getErrorMessage = (e: unknown): string => {
     let msg = e instanceof Error ? e.message : String(e);
-    if (msg.startsWith('Error: ')) {
-        msg = msg.slice(7);
-    }
-    return msg;
+    return msg.replace(/^Error: /, '');
 };
 
 export const handleLookMLBlend = async ({
