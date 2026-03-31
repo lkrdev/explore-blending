@@ -189,15 +189,17 @@ export const handleLookMLBlend = async ({
     );
 
     const fields: IBlendField[] = [];
-    const aliases = queries.reduce((acc, q) => {
-        acc[q.uuid] = q.alias || q.uuid;
-        return acc;
-    }, {} as { [key: string]: string });
+    const aliases = queries.reduce(
+        (acc, q) => {
+            acc[q.uuid] = q.alias || q.uuid;
+            return acc;
+        },
+        {} as { [key: string]: string },
+    );
 
     queries.forEach((q) => {
         q.fields.forEach((f) => {
-            const found = getExploreField(q.explore.id, f.id);
-            if (found) {
+            if (f.is_dynamic) {
                 fields.push({
                     name: f.id,
                     sql_alias: fieldTransform(
@@ -206,13 +208,34 @@ export const handleLookMLBlend = async ({
                         getConnectionDialect(connection_meta),
                         aliases,
                     ),
-                    label_short: found.label_short,
+                    label_short: f.label,
                     view_label: getExploreLabelFromQuery(q),
-                    type: found.lookml_type,
+                    type:
+                        f.lookml_type ||
+                        (f.type === 'measure' ? 'number' : 'string'),
                     query_uuid: q.uuid,
-                    field_type: found.type,
+                    field_type: f.type,
                     query_alias: aliases[q.uuid],
                 });
+            } else {
+                const found = getExploreField(q.explore.id, f.id);
+                if (found) {
+                    fields.push({
+                        name: f.id,
+                        sql_alias: fieldTransform(
+                            q.uuid,
+                            f,
+                            getConnectionDialect(connection_meta),
+                            aliases,
+                        ),
+                        label_short: found.label_short,
+                        view_label: getExploreLabelFromQuery(q),
+                        type: found.lookml_type,
+                        query_uuid: q.uuid,
+                        field_type: found.type,
+                        query_alias: aliases[q.uuid],
+                    });
+                }
             }
         });
     });
@@ -281,11 +304,11 @@ export const handleLookMLBlend = async ({
             api_url,
             extension,
         });
-        if (r.body.ok && dry_run) {
+        if (r.body.success && dry_run) {
             return { success: true, ...r.body };
-        } else if (!r.body.ok) {
+        } else if (!r.body.success) {
             return { success: false, error: r.body.error };
-        } else if (r.body.ok && !dry_run) {
+        } else if (r.body.success && !dry_run) {
             await handleUpdateArtifacts({
                 sdk,
                 body: [

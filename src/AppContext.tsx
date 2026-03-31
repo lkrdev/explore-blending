@@ -151,6 +151,8 @@ export const AppContextProvider = ({
                 return {};
             }
 
+            if (!explore) return {};
+
             ['dimensions', 'measures'].forEach((type) => {
                 const fields: ILookmlModelExploreField[] = get(
                     explore,
@@ -302,11 +304,16 @@ export const AppContextProvider = ({
             ]);
             ready.setTrue();
         }
-        const models = (await sdk.ok(
-            sdk.all_lookml_models({
-                fields: 'name,label,explores(name,label,hidden)',
-            })
-        )) as ILookerModel[];
+        let models: ILookerModel[] = [];
+        try {
+            models = (await sdk.ok(
+                sdk.all_lookml_models({
+                    fields: 'name,label,explores(name,label,hidden)',
+                }),
+            )) as ILookerModel[];
+        } catch (error) {
+            console.error('Failed to load models from server', error);
+        }
         if (!models_finished) {
             setStatus((p) => [
                 ...p,
@@ -408,25 +415,32 @@ export const AppContextProvider = ({
         if (connection) {
             return connection;
         } else {
-            const model_explore = await sdk.ok(
-                sdk.lookml_model_explore({
-                    lookml_model_name: model || '',
-                    explore_name: explore || '',
-                })
-            );
-            if (model_explore.connection_name) {
-                if (update) {
-                    updateModelConnections(
-                        model,
-                        model_explore.connection_name || ''
+            try {
+                const model_explore = await sdk.ok(
+                    sdk.lookml_model_explore({
+                        lookml_model_name: model || '',
+                        explore_name: explore || '',
+                    })
+                );
+                if (model_explore.connection_name) {
+                    if (update) {
+                        updateModelConnections(
+                            model,
+                            model_explore.connection_name || ''
+                        );
+                    }
+
+                    return model_explore.connection_name || '';
+                } else {
+                    console.error(
+                        `Failed to get model connection for ${explore_id}`,
+                        model_explore
                     );
                 }
-
-                return model_explore.connection_name || '';
-            } else {
+            } catch (error) {
                 console.error(
                     `Failed to get model connection for ${explore_id}`,
-                    model_explore
+                    error
                 );
             }
         }

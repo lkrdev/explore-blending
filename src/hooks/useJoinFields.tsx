@@ -17,15 +17,18 @@ const useJoinFields = (evaluate_query: IQuery) => {
         let from_fields_calc: SelectOptionGroupProps[] = [];
 
         forEach(queries, (query, index) => {
-            const exploreId = query.explore?.id;
+            const exploreId = query?.explore?.id;
             if (!exploreId) return;
-            forEach(query.fields, (field) => {
+            forEach(query?.fields, (field) => {
+                if (!field || !field.id) return;
                 const found_field = getExploreField(exploreId, field.id); // Direct call
+                const field_meta = field.is_dynamic ? field : found_field;
                 const in_current_query = evaluate_query.uuid === query.uuid;
-                if (found_field) {
+                
+                if (field_meta) {
                     if (in_current_query) {
                         to_fields_calc.push({
-                            label: found_field.label || field.id,
+                            label: field_meta.label || field.id,
                             value: field.id,
                         });
                     } else {
@@ -37,7 +40,7 @@ const useJoinFields = (evaluate_query: IQuery) => {
                             (g) => g.label === groupLabel
                         );
                         const new_option = {
-                            label: found_field.label || field.id,
+                            label: field_meta.label || field.id,
                             value: [query.uuid, field.id].join('::'),
                         };
                         if (!current_group) {

@@ -329,13 +329,13 @@ export const BlendContextProvider = ({
                 uuid = uniqueId('q');
             }
 
-            const fieldsToUse = initialFields || []; // Use initialFields if provided, else empty array
+            const fieldsToUse = initialFields || [];
 
             const newQueryObject: IQuery = {
                 uuid,
                 query_id: query_id || '',
                 explore: { id: explore_id, label: explore_label },
-                fields: fieldsToUse, // <-- Use fieldsToUse here
+                fields: fieldsToUse,
             };
 
             try {

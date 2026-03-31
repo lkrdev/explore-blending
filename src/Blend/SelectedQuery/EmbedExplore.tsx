@@ -64,31 +64,78 @@ const EmbedExplore: React.FC<{
 
     const getQueryMetadata = async (qid: string) => {
         if (qid?.length) {
-            const metadata = await sdk?.ok(sdk?.query(qid));
-            // short circuit if no fields
-            if (!metadata.fields?.length) {
-                return;
+            try {
+                const metadata = await sdk?.ok(sdk?.query(qid));
+                // short circuit if no fields
+                if (!metadata.fields?.length) {
+                    return;
+                }
+                let newQuery: IQuery = {
+                    uuid,
+                    query_id: qid,
+                    explore: {
+                        id: explore_id,
+                        label: explore_label,
+                    },
+                    fields: [],
+                };
+                let dynamic_fields_map: Record<string, { label: string; type: 'dimension' | 'measure'; is_table_calc?: boolean; lookml_type?: string }> = {};
+                if (metadata.dynamic_fields) {
+                    try {
+                        const parsedDynamicFields = JSON.parse(metadata.dynamic_fields as string);
+                        if (Array.isArray(parsedDynamicFields)) {
+                            parsedDynamicFields.forEach((df: any) => {
+                                const kind = df.category || df._kind_hint;
+                                if ((kind === 'dimension' || df.dimension) && !df.table_calculation) {
+                                    dynamic_fields_map[df.dimension] = {
+                                        label: df.label || df.dimension,
+                                        type: 'dimension',
+                                        lookml_type: df._type_hint || df.type || 'string',
+                                    };
+                                } else if ((kind === 'measure' || df.measure) && !df.table_calculation) {
+                                    dynamic_fields_map[df.measure] = {
+                                        label: df.label || df.measure,
+                                        type: 'measure',
+                                        lookml_type: df._type_hint || df.type || 'number',
+                                    };
+                                } else if (kind === 'table_calculation' || df.table_calculation) {
+                                    dynamic_fields_map[df.table_calculation] = {
+                                        label: df.label || df.table_calculation,
+                                        type: 'dimension',
+                                        is_table_calc: true,
+                                    };
+                                }
+                            });
+                        }
+                    } catch (e) {
+                        console.error('Failed to parse dynamic_fields', e);
+                    }
+                }
+
+                if (metadata.fields?.length) {
+                    newQuery.fields = metadata.fields
+                        .filter((field: string) => {
+                            return !dynamic_fields_map[field]?.is_table_calc;
+                        })
+                        .map((field: string) => {
+                            const field_metadata = getExploreField(explore_id, field);
+                            const dyn_field = dynamic_fields_map[field];
+                            return {
+                                id: field,
+                                label: field_metadata?.label || dyn_field?.label || field,
+                                type: field_metadata?.type || dyn_field?.type || 'dimension',
+                                is_dynamic: !!dyn_field,
+                                lookml_type: dyn_field?.lookml_type,
+                            };
+                        });
+                }
+                updateQuery(newQuery);
+            } catch (error) {
+                console.error(
+                    `Failed to fetch query metadata for qid: ${qid}`,
+                    error
+                );
             }
-            let newQuery: IQuery = {
-                uuid,
-                query_id: qid,
-                explore: {
-                    id: explore_id,
-                    label: explore_label,
-                },
-                fields: [],
-            };
-            if (metadata.fields?.length) {
-                newQuery.fields = metadata.fields.map((field: string) => {
-                    const field_metadata = getExploreField(explore_id, field);
-                    return {
-                        id: field,
-                        label: field,
-                        type: field_metadata?.type || 'dimension',
-                    };
-                });
-            }
-            updateQuery(newQuery);
         }
     };
 

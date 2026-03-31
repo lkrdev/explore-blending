@@ -299,13 +299,15 @@ const getQuerySql = async (
     use_stable_db_view: boolean,
     addStatus?: (status: keyof typeof STATUS_MESSAGES, done: boolean) => void,
 ) => {
-    const aliases = queries.reduce((acc, q) => {
-        acc[q.uuid] = q.alias || q.uuid;
-        return acc;
-    }, {} as { [key: string]: string });
+    const aliases = queries.reduce(
+        (acc, q) => {
+            acc[q.uuid] = q.alias || q.uuid;
+            return acc;
+        },
+        {} as { [key: string]: string },
+    );
     const connection_meta = await sdk.ok(sdk.connection(connection));
     const dialect = getConnectionDialect(connection_meta);
-    const tmp_db_name = connection_meta.tmp_db_name;
     const getQueryOrSlug = async (query_id: string): Promise<string> => {
         // sometimes, looker doesn't like the new string query_id but the slug works.
         try {
@@ -362,54 +364,57 @@ const getQuerySql = async (
         // Wait for all SQL results
         const query_sql_results = await Promise.all(promises);
         // Step 2: Process each raw SQL string
-        const query_sql = query_sql_results.reduce((acc, rawSqlResult, i) => {
-            const curr_query = queries[i];
-            const queryId = queries[i].query_id;
+        const query_sql = query_sql_results.reduce(
+            (acc, rawSqlResult, i) => {
+                const curr_query = queries[i];
+                const queryId = queries[i].query_id;
 
-            // Start processing
-            let processedSql = rawSqlResult.trim();
+                // Start processing
+                let processedSql = rawSqlResult.trim();
 
-            // Step 1: Remove Metadata Query Block
-            processedSql = processedSql
-                .replace(/-- sql for creating the total[\s\S]*$/i, '')
-                .trim();
-
-            // Step 2: Remove Trailing ORDER BY Clause
-            // Matches ORDER BY followed by typical column/number/direction lists, until the end. Less greedy.
-            processedSql = processedSql
-                .replace(
-                    /\sORDER\s+BY\s+[a-zA-Z0-9_.,\s()'"\-\`\[\]]+(?: ASC| DESC)?\s*$/i,
-                    '',
-                )
-                .trim();
-
-            // Step 3: Conditional Limit Removal
-            if (!curr_query.respect_limit) {
+                // Step 1: Remove Metadata Query Block
                 processedSql = processedSql
-                    .replace(/LIMIT\s+\d+\s*$/i, '')
+                    .replace(/-- sql for creating the total[\s\S]*$/i, '')
                     .trim();
+
+                // Step 2: Remove Trailing ORDER BY Clause
+                // Matches ORDER BY followed by typical column/number/direction lists, until the end. Less greedy.
                 processedSql = processedSql
                     .replace(
-                        /FETCH\s+(NEXT|FIRST)\s+\d+\s+ROWS?\s+ONLY\s*$/i,
+                        /\sORDER\s+BY\s+[a-zA-Z0-9_.,\s()'"\-\`\[\]]+(?: ASC| DESC)?\s*$/i,
                         '',
                     )
                     .trim();
-            }
 
-            // Final Checks & Assignment
-            processedSql = processedSql.trim();
-            if (!processedSql) {
-                console.warn(
-                    `Query ${queryId} (Index: ${i}) resulted in empty SQL after processing. Raw SQL was:\n${rawSqlResult}`,
-                );
-                processedSql = '-- Error: Processed SQL was empty';
-            }
+                // Step 3: Conditional Limit Removal
+                if (!curr_query.respect_limit) {
+                    processedSql = processedSql
+                        .replace(/LIMIT\s+\d+\s*$/i, '')
+                        .trim();
+                    processedSql = processedSql
+                        .replace(
+                            /FETCH\s+(NEXT|FIRST)\s+\d+\s+ROWS?\s+ONLY\s*$/i,
+                            '',
+                        )
+                        .trim();
+                }
 
-            return {
-                ...acc,
-                [queries[i].uuid]: processedSql,
-            };
-        }, {} as { [key: string]: string });
+                // Final Checks & Assignment
+                processedSql = processedSql.trim();
+                if (!processedSql) {
+                    console.warn(
+                        `Query ${queryId} (Index: ${i}) resulted in empty SQL after processing. Raw SQL was:\n${rawSqlResult}`,
+                    );
+                    processedSql = '-- Error: Processed SQL was empty';
+                }
+
+                return {
+                    ...acc,
+                    [queries[i].uuid]: processedSql,
+                };
+            },
+            {} as { [key: string]: string },
+        );
 
         // Step 3: Construct the final blended SQL query (Structure remains the same)
         const new_sql = `
