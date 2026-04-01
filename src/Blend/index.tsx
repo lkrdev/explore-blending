@@ -25,6 +25,8 @@ import NoQueries from './NoQueries';
 import { QueryList } from './QueryList';
 import ResetButton from './ResetButton';
 import SelectedQuery from './SelectedQuery';
+import { parseDynamicFields } from '../utils/dynamicFields';
+
 interface BlendProps {}
 
 const Blend: React.FC<BlendProps> = () => {
@@ -146,45 +148,13 @@ const BlendBase: React.FC = () => {
                 const explore_id = `${q.model}::${q.view}`;
                 const explore = explores[explore_id];
 
-                let dynamic_fields_map: Record<string, { label: string; type: 'dimension' | 'measure'; is_table_calc?: boolean; lookml_type?: string }> = {};
-                if (q.dynamic_fields) {
-                    try {
-                        const parsedDynamicFields = JSON.parse(q.dynamic_fields as string);
-                        if (Array.isArray(parsedDynamicFields)) {
-                            parsedDynamicFields.forEach((df: any) => {
-                                const kind = df.category || df._kind_hint;
-                                if ((kind === 'dimension' || df.dimension) && !df.table_calculation) {
-                                    dynamic_fields_map[df.dimension] = {
-                                        label: df.label || df.dimension,
-                                        type: 'dimension',
-                                        lookml_type: df._type_hint || df.type || 'string',
-                                    };
-                                } else if ((kind === 'measure' || df.measure) && !df.table_calculation) {
-                                    dynamic_fields_map[df.measure] = {
-                                        label: df.label || df.measure,
-                                        type: 'measure',
-                                        lookml_type: df._type_hint || df.type || 'number',
-                                    };
-                                } else if (kind === 'table_calculation' || df.table_calculation) {
-                                    dynamic_fields_map[df.table_calculation] = {
-                                        label: df.label || df.table_calculation,
-                                        type: 'dimension',
-                                        is_table_calc: true,
-                                    };
-                                }
-                            });
-                        }
-                    } catch (e) {
-                        console.error('Failed to parse dynamic_fields during hydration', e);
-                    }
-                }
+                const dynamic_fields_map = parseDynamicFields(q.dynamic_fields as string);
 
-                const query_fields: any = (q.fields || [])
+                const query_fields: IQuery['fields'] = (q.fields || [])
                     .filter((f) => !dynamic_fields_map[f]?.is_table_calc)
                     .map((f) => {
                         const field_metadata = fields[explore_id]?.[f];
                         const dyn_field = dynamic_fields_map[f];
-                        if (!field_metadata && !dyn_field) return undefined;
                         return {
                             id: f,
                             label: field_metadata?.label || dyn_field?.label || f,
@@ -192,8 +162,7 @@ const BlendBase: React.FC = () => {
                             is_dynamic: !!dyn_field,
                             lookml_type: dyn_field?.lookml_type,
                         };
-                    })
-                    .filter((f) => f !== undefined);
+                    });
 
                 if (!explore) {
                     console.error(`Explore ${explore_id} not found`);
