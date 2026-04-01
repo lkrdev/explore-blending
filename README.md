@@ -4,7 +4,7 @@ The Explore Blending application is an early version of a Looker extension that 
 
 ## Try it Now
 
--   If you have `sql_runner` permissions in Looker, you can test this extension with no configuration. Add this to any `manifest.lkml` file within any of your LookML projects
+- If you have `sql_runner` permissions in Looker, you can test this extension with no configuration. Add this to any `manifest.lkml` file within any of your LookML projects
 
 ```
 application: explore_blending {
@@ -60,13 +60,41 @@ LookML Mode takes all the explore queries and the adhoc joins and puts them into
 
 ## Use cases
 
--   Advanced Segmenting like users who ordered the top 10 product last week. Create an explore query that finds the top 10 products. Create a second explore query that selects user details and all their purchases last week. Inner join the two queries together
+- Advanced Segmenting like users who ordered the top 10 product last week. Create an explore query that finds the top 10 products. Create a second explore query that selects user details and all their purchases last week. Inner join the two queries together
 
 ## Built-in Extension Settings
 
-## Use LookML
+- **Restrict Settings Access**: When enabled, only users in the specified groups or admins can access these settings.
+    - **Allowed Group IDs**: A comma-separated list of Looker Group IDs allowed to access settings when "Restrict Settings Access" is enabled.
+- **Use Stable DB View**: Uses stable database views for generated SQL queries.
+- **Use LookML**: Switch to using LookML generation instead of SQL Runner. This provides more functionality like saving results and advanced joining.
+    - **Repository Name for Blends**: The GitHub repository name where the generated LookML files will be stored.
+    - **Blend Project Name**: The name of the Looker project that will house the LookML files.
+    - **Create Measures**: Automatically create measures based on dimensions in the blended results.
+    - **Connection Mode**: Choose between "Keep Original Connection" or "Universal Connection" (maps all connections to a single model).
+        - **Universal Connection Name**: The connection to use when "Universal Connection" mode is selected.
+        - **Universal Connection Model Name**: The model name to use when "Universal Connection" mode is selected.
+        - **Connection Model Mapping**: Mapping of individual Looker connections to their respective LookML models (used when in "Keep Original Connection" mode).
+    - **Includes to put in the LookML file**: LookML `include` statements to add to the top of generated files.
+    - **Use Access Grants**: Enable Looker Access Grants for the generated LookML to restrict visibility.
+        - **Access Grant User Attribute**: The user attribute used by the access grant logic.
+    - **User Commit Comment**: Metadata to include in Git commit messages (Display Name, Email, ID).
+- **Override API**: URL to override the default blending backend API.
+- **Use Cached Model Connection**: Cache model and connection metadata to improve performance.
+- **Remove Branded Loading**: Remove branding from the loading screen.
+- **Display Loading Status**: Show detailed status updates during long-running blending operations.
+- **Use Extension Label**: Use the extension's label in the application's header.
 
-## Configure Required
+## Configure Required User Attributes
+
+To use the LookML mode, you must set up the following user attributes in Looker:
+
+- **personal_access_token**: A GitHub Personal Access Token with repository read/write permissions. Required if using LookML mode.
+- **webhook_secret**: Your Looker project's webhook deploy secret. Required if using LookML mode.
+- **client_id** (Optional): Required if using Access Grants.
+- **client_secret** (Optional): Required if using Access Grants.
+
+It is highly recommended to set these to `Hide Values: Yes` and restrict the `Domain Allowlist` for security.
 
 ## Querying Across Models
 
@@ -74,12 +102,13 @@ LookML Mode takes all the explore queries and the adhoc joins and puts them into
 
 API Credentials required
 
--   Recommended to use the Hide Values yes with the API credential, user attributes, and a domain allowlist
--   -   `https://www.lkr.dev/apps/explore-blending/*` or https://your.override.api/*
+- Recommended to use the Hide Values yes with the API credential, user attributes, and a domain allowlist
+-   - `https://www.lkr.dev/apps/explore-blending/*` or https://your.override.api/*
 
 ## Hosting this yourself
 
 ## Securing your user attribute secrets
+
 The application can be setup with several secrets (Deploy Webhook, Github Personal Access Token, and Looker Client Id/Secret). It is recommended when setting up the extension and the user attributes, to use the settings:
 
 - User Access: None
@@ -91,6 +120,7 @@ This will ensure that the secrets can not be exposed by anyone besides the URLs 
 ![Looker User Attribute Secrets](assets/secrets-user-attributes.png)
 
 ## Github
+
 ### Fine grained token
 
 If using a fine grained token, at a minimum make sure you have the following scopes enabled

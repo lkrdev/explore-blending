@@ -62,7 +62,7 @@ const Sql = () => {
         return <div>Loading...</div>;
     }
     if (sql.error) {
-        return <div>Error: {sql.error}</div>;
+        return <div>Error: {String(sql.error?.message || sql.error)}</div>;
     }
 
     if (!first_query_connection) {

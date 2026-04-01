@@ -150,7 +150,7 @@ const RunUpdate = ({
         return (
             <Box p="large">
                 <Button onClick={handleUpdate}>Update User Attributes</Button>
-                <Paragraph color="error">{data.error}</Paragraph>
+                <Paragraph color="error">{String(data.error?.message || data.error)}</Paragraph>
                 <Paragraph color="success">
                     {data.data?.success
                         ? `Updated ${data.data.number_of_users} users`

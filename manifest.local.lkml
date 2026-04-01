@@ -26,6 +26,7 @@ application: explore_blending {
       "connection", 
       "dashboard", 
       "all_connections",
+      "artifact",
       "update_artifacts"
     ]
     external_api_urls: [ 

@@ -5,7 +5,9 @@ import { useAppContext } from '../../AppContext';
 import { EmbedContainer } from '../../components/EmbedContainer';
 import useExtensionSdk from '../../hooks/useExtensionSdk';
 import useSdk from '../../hooks/useSdk';
+import { parseDynamicFields } from '../../utils/dynamicFields';
 import { useBlendContext } from '../Context';
+
 const EmbedExplore: React.FC<{
     initial_query_id: string;
     explore_id: string;
@@ -27,7 +29,7 @@ const EmbedExplore: React.FC<{
     const ready = useBoolean(false);
     const [debouncedQueryId, setDebouncedQueryId] = useDebounceValue(
         initial_query_id,
-        1000
+        1000,
     );
     const extension = useExtensionSdk();
     const sdk = useSdk();
@@ -64,31 +66,58 @@ const EmbedExplore: React.FC<{
 
     const getQueryMetadata = async (qid: string) => {
         if (qid?.length) {
-            const metadata = await sdk?.ok(sdk?.query(qid));
-            // short circuit if no fields
-            if (!metadata.fields?.length) {
-                return;
+            try {
+                const metadata = await sdk?.ok(sdk?.query(qid));
+                // short circuit if no fields
+                if (!metadata.fields?.length) {
+                    return;
+                }
+                let newQuery: IQuery = {
+                    uuid,
+                    query_id: qid,
+                    explore: {
+                        id: explore_id,
+                        label: explore_label,
+                    },
+                    fields: [],
+                };
+                const dynamic_fields_map = parseDynamicFields(
+                    metadata.dynamic_fields as string,
+                );
+
+                if (metadata.fields?.length) {
+                    newQuery.fields = metadata.fields
+                        .filter((field: string) => {
+                            return !dynamic_fields_map[field]?.is_table_calc;
+                        })
+                        .map((field: string) => {
+                            const field_metadata = getExploreField(
+                                explore_id,
+                                field,
+                            );
+                            const dyn_field = dynamic_fields_map[field];
+                            return {
+                                id: field,
+                                label:
+                                    field_metadata?.label ||
+                                    dyn_field?.label ||
+                                    field,
+                                type:
+                                    field_metadata?.type ||
+                                    dyn_field?.type ||
+                                    'dimension',
+                                is_dynamic: !!dyn_field,
+                                lookml_type: dyn_field?.lookml_type,
+                            };
+                        });
+                }
+                updateQuery(newQuery);
+            } catch (error) {
+                console.error(
+                    `Failed to fetch query metadata for qid: ${qid}`,
+                    error,
+                );
             }
-            let newQuery: IQuery = {
-                uuid,
-                query_id: qid,
-                explore: {
-                    id: explore_id,
-                    label: explore_label,
-                },
-                fields: [],
-            };
-            if (metadata.fields?.length) {
-                newQuery.fields = metadata.fields.map((field: string) => {
-                    const field_metadata = getExploreField(explore_id, field);
-                    return {
-                        id: field,
-                        label: field,
-                        type: field_metadata?.type || 'dimension',
-                    };
-                });
-            }
-            updateQuery(newQuery);
         }
     };
 

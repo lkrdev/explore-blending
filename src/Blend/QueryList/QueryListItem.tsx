@@ -64,8 +64,9 @@ const QueryListItem: React.FC<IQueryListItem> = ({
     const itemRef = useRef<HTMLDivElement>(null);
     const explore_label = getExploreLabelFromQuery(query);
     const Fields = reduce(
-        query.fields,
+        query?.fields || [],
         (result, field) => {
+            if (!field || !field.id) return result;
             const field_metadata = query.explore?.id
                 ? getExploreField(query.explore.id, field.id)
                 : null;

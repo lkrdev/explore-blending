@@ -25,6 +25,8 @@ import NoQueries from './NoQueries';
 import { QueryList } from './QueryList';
 import ResetButton from './ResetButton';
 import SelectedQuery from './SelectedQuery';
+import { parseDynamicFields } from '../utils/dynamicFields';
+
 interface BlendProps {}
 
 const Blend: React.FC<BlendProps> = () => {
@@ -145,9 +147,22 @@ const BlendBase: React.FC = () => {
             const queries: IQuery[] = query_responses.reduce((acc, q, k) => {
                 const explore_id = `${q.model}::${q.view}`;
                 const explore = explores[explore_id];
-                const query_fields = (q.fields || []).map(
-                    (f) => fields[explore_id][f],
-                );
+
+                const dynamic_fields_map = parseDynamicFields(q.dynamic_fields as string);
+
+                const query_fields: IQuery['fields'] = (q.fields || [])
+                    .filter((f) => !dynamic_fields_map[f]?.is_table_calc)
+                    .map((f) => {
+                        const field_metadata = fields[explore_id]?.[f];
+                        const dyn_field = dynamic_fields_map[f];
+                        return {
+                            id: f,
+                            label: field_metadata?.label || dyn_field?.label || f,
+                            type: field_metadata?.type || dyn_field?.type || 'dimension',
+                            is_dynamic: !!dyn_field,
+                            lookml_type: dyn_field?.lookml_type,
+                        };
+                    });
 
                 if (!explore) {
                     console.error(`Explore ${explore_id} not found`);

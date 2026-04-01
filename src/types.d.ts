@@ -15,6 +15,8 @@ interface IQuery {
         id: string;
         label: string;
         type: 'dimension' | 'measure';
+        is_dynamic?: boolean;
+        lookml_type?: string;
     }[];
     respect_limit?: true;
     alias?: string;

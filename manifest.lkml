@@ -27,8 +27,7 @@ application: explore_blending {
       "dashboard", 
       "all_connections",
       "artifact",
-      "update_artifacts",
-      "session"
+      "update_artifacts"
     ]
     external_api_urls: [ 
       "https://www.lkr.dev/apps/explore-blending/api"
