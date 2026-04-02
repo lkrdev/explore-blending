@@ -46,8 +46,11 @@ const getLabel = (
     field: IQuery['fields'][0],
     field_metadata: IExploreField | null,
 ) => {
-    if (field_metadata?.view_label?.length) {
-        return field_metadata.view_label;
+    if (
+        field_metadata?.view_label?.length &&
+        field_metadata?.label_short?.length
+    ) {
+        return field_metadata.view_label + ': ' + field_metadata.label_short;
     } else if (field_metadata?.label_short?.length) {
         return field_metadata.label_short;
     } else if (field_metadata?.label?.length) {
@@ -73,13 +76,6 @@ const QueryListItem: React.FC<IQueryListItem> = ({
 
     const itemRef = useRef<HTMLDivElement>(null);
     const explore_label = getExploreLabelFromQuery(query);
-    const query_field_map = query.fields.reduce(
-        (acc, field) => {
-            acc[field.id] = field;
-            return acc;
-        },
-        {} as { [key: string]: IQuery['fields'][0] },
-    );
     const Fields = reduce(
         query.fields,
         (result, field) => {
