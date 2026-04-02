@@ -3,116 +3,124 @@ name: Main Docker Image Build and Push
 on: workflow_dispatch
 
 env:
-  REGION: us-central1
-  SERVICE_NAME: explore-blend-api
-  APP_NAME: explore-blending
-  BUCKET_NAME: ${{ secrets.GCP_BUCKET_NAME }}
+    REGION: us-central1
+    SERVICE_NAME: explore-blend-api
+    APP_NAME: explore-blending
+    BUCKET_NAME: ${{ secrets.GCP_BUCKET_NAME }}
 
 jobs:
-  build-and-push:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: "read"
-      id-token: "write"
+    build-and-push:
+        runs-on: ubuntu-latest
+        permissions:
+            contents: 'read'
+            id-token: 'write'
 
-    steps:
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+            - name: Set TAG
+              run: echo "TAG=v$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+            - name: Set IMAGE_NAME
+              run: echo "IMAGE_NAME=${{ env.REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ env.APP_NAME }}/${{ env.SERVICE_NAME }}" >> $GITHUB_ENV
+            - name: Authenticate to Google Cloud
+              uses: google-github-actions/auth@v2
+              with:
+                  workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+                  project_id: ${{ secrets.GCP_PROJECT_ID }}
 
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Set TAG
-        run: echo "TAG=v$(git rev-parse --short HEAD)" >> $GITHUB_ENV
-      - name: Set IMAGE_NAME
-        run: echo "IMAGE_NAME=${{ env.REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ env.APP_NAME }}/${{ env.SERVICE_NAME }}" >> $GITHUB_ENV
-      - name: Authenticate to Google Cloud
-        uses: google-github-actions/auth@v2
-        with:
-          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
-          project_id: ${{ secrets.GCP_PROJECT_ID }}
+            - name: Set up Cloud SDK
+              uses: google-github-actions/setup-gcloud@v2
 
-      - name: Set up Cloud SDK
-        uses: google-github-actions/setup-gcloud@v2
+            - name: Build and push Docker image
+              run: |
+                  # Build and push the image with the release tag
+                  gcloud builds submit blend_api \
+                    --project ${{ secrets.GCP_PROJECT_ID }} \
+                    --tag ${{ env.IMAGE_NAME }}:${{ env.TAG }} \
+                    --gcs-log-dir=gs://${{ secrets.GCP_LOGS_BUCKET_NAME }}/${{ env.APP_NAME }}
 
-      - name: Build and push Docker image
-        run: |
-          # Build and push the image with the release tag
-          gcloud builds submit blend_api \
-            --project ${{ secrets.GCP_PROJECT_ID }} \
-            --tag ${{ env.IMAGE_NAME }}:${{ env.TAG }} \
-            --gcs-log-dir=gs://${{ secrets.GCP_LOGS_BUCKET_NAME }}/${{ env.APP_NAME }}
+            - name: Deploy to Cloud Run (no traffic)
+              run: |
+                  gcloud run deploy ${{ env.SERVICE_NAME }} \
+                    --image ${{ env.IMAGE_NAME }}:${{ env.TAG }} \
+                    --region ${{ env.REGION }} \
+                    --tag ${{ env.TAG }} \
+                    --platform managed \
+                    --allow-unauthenticated \
+                    --no-traffic
 
-      - name: Deploy to Cloud Run (no traffic)
-        run: |
-          gcloud run deploy ${{ env.SERVICE_NAME }} \
-            --image ${{ env.IMAGE_NAME }}:${{ env.TAG }} \
-            --region ${{ env.REGION }} \
-            --tag ${{ env.TAG }} \
-            --platform managed \
-            --allow-unauthenticated \
-            --no-traffic
+    build-and-upload-frontend:
+        runs-on: ubuntu-latest
+        permissions:
+            contents: 'read'
+            id-token: 'write'
 
-  build-and-upload-frontend:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: "read"
-      id-token: "write"
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
 
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+            - name: Set TAG
+              run: echo "TAG=v$(git rev-parse --short HEAD)" >> $GITHUB_ENV
 
-      - name: Set TAG
-        run: echo "TAG=v$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+            - name: Install and use Node.js via nvm
+              run: |
+                  curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
+                  export NVM_DIR="$HOME/.nvm"
+                  [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" # This loads nvm
+                  nvm install # Installs version from .nvmrc
+                  nvm use     # Uses the installed version
+                  npm install --global yarn
 
-      - name: Install and use Node.js via nvm
-        run: |
-          curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
-          export NVM_DIR="$HOME/.nvm"
-          [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" # This loads nvm
-          nvm install # Installs version from .nvmrc
-          nvm use     # Uses the installed version
-          npm install --global yarn
+            - name: Install dependencies
+              run: yarn install
 
-      - name: Install dependencies
-        run: yarn install
+            - name: Build frontend
+              run: yarn build
 
-      - name: Build frontend
-        run: yarn build
+            # Need auth and gcloud setup before uploading
+            - name: Authenticate to Google Cloud
+              uses: google-github-actions/auth@v2
+              with:
+                  workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+                  project_id: ${{ secrets.GCP_PROJECT_ID }}
 
-      # Need auth and gcloud setup before uploading
-      - name: Authenticate to Google Cloud
-        uses: google-github-actions/auth@v2
-        with:
-          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
-          project_id: ${{ secrets.GCP_PROJECT_ID }}
+            - name: Set up Cloud SDK
+              uses: google-github-actions/setup-gcloud@v2
 
-      - name: Set up Cloud SDK
-        uses: google-github-actions/setup-gcloud@v2
+            - name: Upload frontend bundle to GCS tag
+              uses: google-github-actions/upload-cloud-storage@v2
+              with:
+                  process_gcloudignore: false
+                  path: dist
+                  destination: ${{ env.BUCKET_NAME }}/apps/${{ env.APP_NAME }}/${{ env.TAG }}
+                  parent: false
 
-      - name: Upload frontend bundle to GCS tag
-        uses: google-github-actions/upload-cloud-storage@v2
-        with:
-          process_gcloudignore: false
-          path: dist
-          destination: ${{ env.BUCKET_NAME }}/apps/${{ env.APP_NAME }}/${{ env.TAG }}
-          parent: false
+    deployment-summary:
+        needs: [build-and-push, build-and-upload-frontend]
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
 
-  deployment-summary:
-    needs: [build-and-push, build-and-upload-frontend]
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+            - name: Set TAG
+              run: echo "TAG=v$(git rev-parse --short HEAD)" >> $GITHUB_ENV
 
-      - name: Set TAG
-        run: echo "TAG=v$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+            - name: Generate Deployment Artifact
+              run: |
+                  echo "CDN Link: https://cdn.lkr.dev/apps/${{ env.APP_NAME }}/${{ env.TAG }}" > deployment-links.txt
+                  echo "Cloud Run API Link: https://www.lkr.dev/apps/${{ env.APP_NAME }}/${{ env.TAG }}/api" >> deployment-links.txt
 
-      - name: Generate Deployment Artifact
-        run: |
-          echo "CDN Link: https://cdn.lkr.dev/apps/${{ env.APP_NAME }}/${{ env.TAG }}" > deployment-links.txt
-          echo "Cloud Run API Link: https://www.lkr.dev/apps/${{ env.APP_NAME }}/${{ env.TAG }}/api" >> deployment-links.txt
+            - name: Upload Deployment Artifact
+              uses: actions/upload-artifact@v4
+              with:
+                  name: deployment-links
+                  path: deployment-links.txt
 
-      - name: Upload Deployment Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: deployment-links
-          path: deployment-links.txt
+    webhook:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Trigger Website Deploy
+              run: |
+                  curl -fSL "$DEPLOY_URL"
+              env:
+                  DEPLOY_URL: ${{ secrets.DEPLOY_URL }}
