@@ -17,6 +17,7 @@ interface IQuery {
         type: 'dimension' | 'measure';
         is_dynamic?: boolean;
         lookml_type?: string;
+        is_table_calc?: boolean;
     }[];
     respect_limit?: true;
     alias?: string;

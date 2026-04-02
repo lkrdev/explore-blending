@@ -42,12 +42,22 @@ const StyledButtonBase = styled(ButtonBase)<{ selected: boolean }>`
     }};
 `;
 
-const StyledSpace = styled(Space)`
-    min-width: 56px;
-    & .icon - actions {
-        visibility: hidden;
+const getLabel = (
+    field: IQuery['fields'][0],
+    field_metadata: IExploreField | null,
+) => {
+    if (field_metadata?.view_label?.length) {
+        return field_metadata.view_label;
+    } else if (field_metadata?.label_short?.length) {
+        return field_metadata.label_short;
+    } else if (field_metadata?.label?.length) {
+        return field_metadata.label;
+    } else if (field?.label?.length) {
+        return field.label;
+    } else {
+        return field.id;
     }
-`;
+};
 
 const QueryListItem: React.FC<IQueryListItem> = ({
     selected,
@@ -63,30 +73,33 @@ const QueryListItem: React.FC<IQueryListItem> = ({
 
     const itemRef = useRef<HTMLDivElement>(null);
     const explore_label = getExploreLabelFromQuery(query);
+    const query_field_map = query.fields.reduce(
+        (acc, field) => {
+            acc[field.id] = field;
+            return acc;
+        },
+        {} as { [key: string]: IQuery['fields'][0] },
+    );
     const Fields = reduce(
-        query?.fields || [],
+        query.fields,
         (result, field) => {
-            if (!field || !field.id) return result;
-            const field_metadata = query.explore?.id
+            const explore_field_metadata = query.explore?.id
                 ? getExploreField(query.explore.id, field.id)
                 : null;
             const itemColor =
-                field_metadata?.type === 'measure'
+                field?.type === 'measure'
                     ? 'measure'
-                    : field_metadata?.type === 'dimension'
-                    ? 'dimension'
-                    : 'key';
-            const label =
-                field_metadata?.view_label?.length &&
-                field_metadata?.label_short?.length
-                    ? `${field_metadata?.view_label}: ${field_metadata?.label_short}`
-                    : field_metadata?.label || field.id;
+                    : field?.type === 'dimension'
+                      ? 'dimension'
+                      : 'key';
+            const label = getLabel(field, explore_field_metadata);
+
             const Field = (
                 <Paragraph
                     key={`${query.uuid}-${field.id}`}
                     style={{ pointerEvents: 'none' }} // Not interactive
                     color={itemColor}
-                    fontSize="xsmall"
+                    fontSize='xsmall'
                     title={field.id}
                 >
                     {label}
@@ -102,12 +115,12 @@ const QueryListItem: React.FC<IQueryListItem> = ({
         {
             dimensions: [] as React.ReactNode[],
             measures: [] as React.ReactNode[],
-        }
+        },
     );
 
     return (
         <StyledButtonBase
-            as="li"
+            as='li'
             selected={selected}
             style={{
                 cursor: 'pointer',
@@ -116,18 +129,18 @@ const QueryListItem: React.FC<IQueryListItem> = ({
             }}
             onClick={onClick}
         >
-            <Space gap="xxsmall" align="start">
-                <SpaceVertical flexGrow={1} gap="xxsmall">
+            <Space gap='xxsmall' align='start'>
+                <SpaceVertical flexGrow={1} gap='xxsmall'>
                     <Header>{explore_label}</Header>
-                    <Box as="ul" pl={'medium'}>
+                    <Box as='ul' pl={'medium'}>
                         {Fields.dimensions}
                         {Fields.measures}
                         {Fields.dimensions.length === 0 &&
                         Fields.measures.length === 0 ? (
                             <Paragraph
-                                fontStyle="italic"
-                                fontSize="xsmall"
-                                color="warning"
+                                fontStyle='italic'
+                                fontSize='xsmall'
+                                color='warning'
                             >
                                 No fields selected
                             </Paragraph>
@@ -136,15 +149,15 @@ const QueryListItem: React.FC<IQueryListItem> = ({
                 </SpaceVertical>
                 <Grid
                     columns={2}
-                    gap="none"
+                    gap='none'
                     flexGrow={0}
-                    width="auto"
-                    className="icon-actions"
+                    width='auto'
+                    className='icon-actions'
                 >
                     <IconButton
                         icon={<Delete />}
                         label={`Delete query`}
-                        size="small"
+                        size='small'
                         // Hide delete button if only one query exists
                         // Disable during any duplication process
                         disabled={duplicating}
@@ -161,12 +174,12 @@ const QueryListItem: React.FC<IQueryListItem> = ({
                                 <Spinner size={16} />
                             ) : (
                                 <Icon
-                                    size="medium"
+                                    size='medium'
                                     icon={<CopyAll size={24} />}
                                 />
                             )
                         }
-                        label="Duplicate Query"
+                        label='Duplicate Query'
                         onClick={(e: React.MouseEvent) => {
                             e.stopPropagation();
                             e.preventDefault();
@@ -174,7 +187,7 @@ const QueryListItem: React.FC<IQueryListItem> = ({
                         }}
                         // Disable if this specific item or any item is duplicating
                         disabled={duplicating}
-                        size="small"
+                        size='small'
                     />
                     {index > 0 ? (
                         <Join

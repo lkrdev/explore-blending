@@ -18,6 +18,7 @@ import useSdk from '../hooks/useSdk';
 import { useSearchParams } from '../hooks/useSearchParams';
 import { SettingsIconButton } from '../Settings';
 import { useSettings } from '../SettingsContext';
+import { parseDynamicFields } from '../utils/dynamicFields';
 import BlendButton from './BlendButton';
 import { BlendContextProvider, useBlendContext } from './Context';
 import NewExplore from './NewExplore';
@@ -25,7 +26,6 @@ import NoQueries from './NoQueries';
 import { QueryList } from './QueryList';
 import ResetButton from './ResetButton';
 import SelectedQuery from './SelectedQuery';
-import { parseDynamicFields } from '../utils/dynamicFields';
 
 interface BlendProps {}
 
@@ -102,20 +102,23 @@ const BlendBase: React.FC = () => {
     }, [models]);
 
     const explores = useMemo(() => {
-        return models.reduce((acc, model) => {
-            model.explores?.forEach((explore) => {
-                if (explore.hidden) {
-                    return;
-                } else {
-                    const explore_id = `${model.name}::${explore.name}`;
-                    acc[explore_id] = {
-                        id: explore_id,
-                        label: explore.label!,
-                    };
-                }
-            });
-            return acc;
-        }, {} as { [key: string]: { id: string; label: string } });
+        return models.reduce(
+            (acc, model) => {
+                model.explores?.forEach((explore) => {
+                    if (explore.hidden) {
+                        return;
+                    } else {
+                        const explore_id = `${model.name}::${explore.name}`;
+                        acc[explore_id] = {
+                            id: explore_id,
+                            label: explore.label!,
+                        };
+                    }
+                });
+                return acc;
+            },
+            {} as { [key: string]: { id: string; label: string } },
+        );
     }, [models]);
 
     const getBlendQueries = async () => {
@@ -138,27 +141,37 @@ const BlendBase: React.FC = () => {
             const _explore_fields = await Promise.all(
                 explores_ids.map(getExploreFields),
             );
-            const fields = _explore_fields.reduce((acc, explore_fields, i) => {
-                const explore_id = explores_ids[i];
-                acc[explore_id] = explore_fields;
-                return acc;
-            }, {} as { [key: string]: { [key: string]: IExploreField } });
+            const fields = _explore_fields.reduce(
+                (acc, explore_fields, i) => {
+                    const explore_id = explores_ids[i];
+                    acc[explore_id] = explore_fields;
+                    return acc;
+                },
+                {} as { [key: string]: { [key: string]: IExploreField } },
+            );
 
             const queries: IQuery[] = query_responses.reduce((acc, q, k) => {
                 const explore_id = `${q.model}::${q.view}`;
                 const explore = explores[explore_id];
 
-                const dynamic_fields_map = parseDynamicFields(q.dynamic_fields as string);
+                const dynamic_fields_map = parseDynamicFields(
+                    q.dynamic_fields as string,
+                );
 
                 const query_fields: IQuery['fields'] = (q.fields || [])
                     .filter((f) => !dynamic_fields_map[f]?.is_table_calc)
                     .map((f) => {
                         const field_metadata = fields[explore_id]?.[f];
                         const dyn_field = dynamic_fields_map[f];
+
                         return {
                             id: f,
-                            label: field_metadata?.label || dyn_field?.label || f,
-                            type: field_metadata?.type || dyn_field?.type || 'dimension',
+                            label:
+                                field_metadata?.label || dyn_field?.label || f,
+                            type:
+                                field_metadata?.type ||
+                                dyn_field?.type ||
+                                'dimension',
                             is_dynamic: !!dyn_field,
                             lookml_type: dyn_field?.lookml_type,
                         };
